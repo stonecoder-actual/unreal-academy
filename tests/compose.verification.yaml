@@ -1,0 +1,9 @@
+# Isolated generated-media checks; never mounts the real library or database.
+services:
+  backend:
+    volumes: !override
+      - ./data/phase2-verification/database:/data
+      - ./data/phase2-verification/courses:/courses:ro
+  frontend:
+    ports: !override
+      - "127.0.0.1:3001:80"
