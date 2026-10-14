@@ -5,7 +5,7 @@ from app.main import create_app
 def test_health_and_persistence(tmp_path):
     path = tmp_path / 'academy.sqlite3'
     with TestClient(create_app(path)) as client:
-        assert client.get('/api/health').json() == {'status': 'ok', 'database': 'ok', 'phase': 2}
+        assert client.get('/api/health').json() == {'status': 'ok', 'database': 'ok', 'phase': 3}
         assert client.get('/api/settings').json()['welcome_message']
         message = "Let's build worlds! 'quoted'"
         assert client.put('/api/settings', json={'welcome_message': message}).status_code == 200
@@ -26,7 +26,7 @@ def test_newer_schema_rejected(tmp_path):
     import pytest
     path = tmp_path / 'new.sqlite3'
     with sqlite3.connect(path) as db:
-        db.execute('PRAGMA user_version = 3')
+        db.execute('PRAGMA user_version = 4')
     with pytest.raises(RuntimeError, match='newer'):
         with TestClient(create_app(path)):
             pass

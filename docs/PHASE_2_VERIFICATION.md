@@ -36,13 +36,29 @@ running at http://localhost:3000. The browser screenshot of the generated lesson
 is saved locally under `data/phase2-verification/browser-preview.png` (Git-ignored).
 No GitHub repository was created or published.
 
-## Remaining acceptance step
+## Real-course follow-up
 
-No purchased course location has been supplied yet. The parent must copy the
-first few MP4/SRT/resource files into a course folder, set `COURSES_DIR` to the
-host library path, recreate the app, and import that folder. A real-course
-playback check is still required before declaring the learning workflow ready
-for the student. Recommended folders and setup are documented in the README.
+The parent subsequently supplied a local course directory. Connected it through
+the Git-ignored `.env` using the existing read-only course mount and imported
+the teaching collection inside it. Original files and directories were preserved.
+
+- Imported **33 MP4 lessons**, approximately **14 GB**, with **33 matched SRT files**.
+- All 33 videos passed codec checks; import and rescan returned no warnings.
+- Display title is `Unreal Engine Megacourse`; numbered sections sort naturally,
+  with the Introduction first and Conclusion section last.
+- Real video HTTP range check: 206, 100 bytes. Caption endpoint: 200, WebVTT.
+- Browser playback: first lesson loaded, resumed at a test checkpoint, played
+  without a media error, and displayed real subtitles. No console warnings/errors.
+- Playback position survived a backend container restart. Rescan retained
+  lesson count, IDs, and saved playback position.
+- Restored the original first-lesson playback/watched state after verification,
+  leaving all lessons unwatched and the course ready for the student's first start.
+- No project files or learning resource downloads were present in the imported
+  teaching collection. Resource downloads remain covered by the generated tests.
+
+The real-course playback acceptance check is now complete. The app remains local
+at http://localhost:3000; course files and verification artifacts remain outside
+Git and container images. No source-code changes were needed for this import.
 
 ## Limits
 

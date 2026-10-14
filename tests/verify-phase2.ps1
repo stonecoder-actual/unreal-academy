@@ -4,7 +4,7 @@ $composeFiles = @('-p', 'unreal-academy-verification', '-f', 'compose.yaml', '-f
 $page = Invoke-WebRequest $Origin -UseBasicParsing
 if ($page.StatusCode -ne 200) { throw 'Frontend failed' }
 $health = Invoke-RestMethod "$Origin/api/health"
-if ($health.phase -ne 2 -or $health.database -ne 'ok') { throw 'Health failed' }
+if ($health.phase -lt 2 -or $health.database -ne 'ok') { throw 'Health failed' }
 $import = Invoke-RestMethod "$Origin/api/courses/import" -Method Post -ContentType 'application/json' -Body '{"folder":"Verification Course"}'
 $course = Invoke-RestMethod "$Origin/api/courses/$($import.course_id)"
 $lesson = $course.lessons[0]

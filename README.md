@@ -1,9 +1,50 @@
 # Unreal Academy
 
-Phase 2 adds local course import, video lessons, captions, resource downloads,
-and saved playback progress to the React/TypeScript, FastAPI and SQLite foundation.
-Quizzes, practical assignment review, authentication, gamification and AI are
-future milestones.
+Phase 3 adds parent-reviewed guided lessons, knowledge checks, practical work
+review, persistent XP and levels to the local course player. Authentication,
+automated Unreal project assessment and live AI services remain future work.
+
+## Guided lesson pilot
+
+The private lesson 4 draft is available under **Parent setup → Guided lessons**.
+Open **Review the full lesson and answer key**, review it with the caveats and
+practical rubric, then click **Approve lesson for Jaxon**. The student course
+card then offers **Start guided lesson**, which opens that video directly.
+Earlier videos stay available; they are not automatically marked watched.
+
+The pilot contains seven timestamped sections, 12 scenario-based checks with
+hints and explanations, and an optional character spawn lab. Use section buttons
+to seek the video, pause to discuss predictions, then answer checks. The practical
+task may be completed another day. It saves a prediction, observation and
+explanation; show the actual editor or a locally saved screenshot to the parent.
+Screenshot upload and automatic project grading are not implemented.
+
+Each first correct check earns 10 XP, even after a retry. Repeating it earns no
+more. Wrong answers and watching award zero. The 12 checks offer 120 XP; practical
+work offers 60 XP once, only after parent approval against the rubric. A parent
+can request a revision with feedback. Quiz, watched and practical states remain
+separate. Levels start at 1 and advance every 100 XP (Level 2 at 100, Level 3 at
+200). `settings.xp_per_level` holds that positive threshold. A level is a progress
+marker, not a mastery certificate.
+
+The authored course-specific JSON and detailed analysis are private files under
+`data/`, excluded from Git and images. Import the local draft into SQLite with:
+
+```powershell
+docker compose exec -T backend python -m app.guided /data/lesson4-guided.json
+```
+
+Import creates or updates a **draft**; it never publishes automatically. A
+published document is immutable in this milestone. Source hashes bind it to the
+video/subtitles; changed sources block its use. A complete published-revision
+editor is future work. A new checkout without the private local file/database
+does not include purchased-course curriculum.
+
+Schema migration 3 first saves a consistent `data/backups/pre-v3-*.sqlite3`
+snapshot. It retains existing courses/playback and adds guided documents, quiz
+attempts, a unique-key XP ledger, and practical submissions. Rollback to Phase 2
+requires the matching pre-v3 backup while the app is stopped; preserve current
+data separately first.
 
 ## Architecture
 
@@ -199,6 +240,12 @@ the stored message. Container replacement also retains this bind-mounted file:
 - `GET /api/resources/{id}/download`: original resource as an attachment.
 - `PUT /api/lessons/{id}/progress`: JSON `{"position":42,"watched":false}`;
   omit `watched` to preserve its current value.
+- `GET /api/xp`: XP total, current level and progress to the next level.
+- `GET /api/lessons/{id}/guide`: published guided lesson and saved learning state.
+- `POST /api/guides/{id}/questions/{question}/answer`: JSON `{"answer":"exact option text"}`.
+- `POST /api/guides/{id}/practice`: prediction, observation and explanation strings.
+- `GET /api/parent/guides` and `POST /api/parent/guides/{id}/publish`: review and publish drafts.
+- `GET /api/parent/submissions` and `POST /api/parent/submissions/{id}/review`: evidence and feedback.
 
 `backend/app/schema.sql` initializes schema version 1 using SQLite `user_version`.
 The `settings` table has a text primary key and non-null text value. Initial data

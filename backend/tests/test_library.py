@@ -104,6 +104,35 @@ def test_paths_validation_and_missing_ids(library):
         assert result.json()['position'] <= 3.1
 
 
+def test_multiple_courses_nested_paths_names_and_english_captions(library):
+    database, root, folder = library
+    second = root / 'Wrapper' / 'Actual course'
+    second.mkdir(parents=True)
+    (second / '001-Intro-source.mp4').write_bytes((folder / '01 Intro.mp4').read_bytes())
+    (second / '001-Intro-english-source.srt').write_text('1\n00:00:00,110 --> 00:00:02,0\nEnglish\n')
+    (second / '001-Intro-persian-source.srt').write_text('Other language')
+    with TestClient(create_app(database, root)) as client:
+        first = import_and_detail(client)
+        first_id = first['lessons'][0]['id']
+        client.put(f'/api/lessons/{first_id}/progress', json={'position': 1.5, 'watched': True})
+        response = client.post('/api/courses/import', json={'folder': 'Wrapper/Actual course', 'title': 'Gameplay Ability System'})
+        assert response.status_code == 200
+        second_id = response.json()['course_id']
+        second = client.get(f'/api/courses/{second_id}').json()
+        assert second['title'] == 'Gameplay Ability System'
+        lesson = second['lessons'][0]
+        assert lesson['position'] == 0 and lesson['watched'] == 0
+        caption = client.get(f"/api/lessons/{lesson['id']}/captions").text
+        assert 'English' in caption and '00:00:02.000' in caption
+        client.put(f"/api/lessons/{lesson['id']}/progress", json={'position': 2})
+        assert client.get('/api/xp').json()['total_xp'] == 0
+    with TestClient(create_app(database, root)) as client:
+        assert client.get(f"/api/courses/{first['id']}").json()['lessons'][0]['position'] == 1.5
+        assert client.get(f'/api/courses/{second_id}').json()['lessons'][0]['position'] == 2
+        assert client.post('/api/courses/import', json={'folder': 'Wrapper/Actual course'}).json()['course_id'] == second_id
+        assert client.get(f'/api/courses/{second_id}').json()['title'] == 'Gameplay Ability System'
+
+
 def test_symlink_escape(library):
     database, root, folder = library
     outside = root.parent / 'secret.txt'
@@ -131,7 +160,7 @@ def test_migration_backup_preserves_phase_one(tmp_path):
         assert db.execute('PRAGMA user_version').fetchone()[0] == 1
         assert db.execute('SELECT value FROM settings').fetchone()[0] == 'Existing welcome'
     with sqlite3.connect(database) as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 2
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 3
     with TestClient(create_app(database, tmp_path / 'courses')):
         pass
-    assert len(list((tmp_path / 'backups').glob('*'))) == 1
+    assert len(list((tmp_path / 'backups').glob('*'))) == 2

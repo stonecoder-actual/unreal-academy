@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from .database import connect, initialize
 from .library import create_library_router
+from .guided import create_guided_router
 
 
 def create_app(database_path: Path | None = None, courses_root: Path | None = None):
@@ -18,12 +19,13 @@ def create_app(database_path: Path | None = None, courses_root: Path | None = No
 
     app = FastAPI(title='Unreal Academy', lifespan=lifespan)
     app.include_router(create_library_router(path, courses_root or Path(os.getenv('COURSES_ROOT', '/courses'))))
+    app.include_router(create_guided_router(path, courses_root or Path(os.getenv('COURSES_ROOT', '/courses'))))
 
     @app.get('/api/health')
     def health():
         with connect(path) as db:
             db.execute('SELECT value FROM settings LIMIT 1').fetchone()
-        return {'status': 'ok', 'database': 'ok', 'phase': 2}
+        return {'status': 'ok', 'database': 'ok', 'phase': 3}
 
     @app.get('/api/settings')
     def settings():

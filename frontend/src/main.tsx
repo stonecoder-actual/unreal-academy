@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client';
 import './style.css';
 import { request } from './api';
 import { Library, ParentImport } from './Library';
+import { ParentGuidedLessons } from './Guided';
+import { XPPanel, Profile } from './Progress';
+import { Avatar, Icon } from './UI';
 
 function App() {
-  const [view, setView] = useState<'learn' | 'parent'>('learn');
+  const [view, setView] = useState<'learn' | 'courses' | 'profile' | 'parent'>('learn');
   const [revision, setRevision] = useState(0);
   const [status, setStatus] = useState('Connecting to backend…');
   const [message, setMessage] = useState('');
@@ -35,18 +38,28 @@ function App() {
     } catch { setFeedback('Save failed. Please try again.'); }
     finally { setSaving(false); }
   }
-  return <main>
-    <span className="badge">PHASE 2 · IN DEVELOPMENT</span>
-    <h1>Unreal Academy</h1>
-    <p className="intro">A place to learn, experiment, and build your own worlds.</p>
-    <p className="welcome">{message}</p>
-    <nav aria-label="Main navigation"><button aria-pressed={view === 'learn'} onClick={() => setView('learn')}>My learning</button>
-      <button className="secondary" aria-pressed={view === 'parent'} onClick={() => setView('parent')}>Parent setup</button></nav>
-    {view === 'learn' ? <Library revision={revision}/> : <>
+  function navigate(next:typeof view){setView(next);window.scrollTo({top:0});}
+  return <div className="app-shell">
+    <a className="skip-link" href="#main-content">Skip to learning</a>
+    <aside className="app-sidebar">
+      <button className="brand" onClick={()=>navigate('learn')} aria-label="Unreal Academy home"><span className="brand-symbol"><Icon name="cube" size={27}/></span><span>UNREAL<small>ACADEMY</small></span></button>
+      <p className="nav-caption">YOUR WORKSPACE</p>
+      <nav aria-label="Main navigation">
+        <button className={view==='learn'?'active':''} aria-current={view==='learn'?'page':undefined} onClick={()=>navigate('learn')}><Icon name="home"/>My learning</button>
+        <button className={view==='courses'?'active':''} aria-current={view==='courses'?'page':undefined} onClick={()=>navigate('courses')}><Icon name="library"/>Course library</button>
+        <button className={view==='profile'?'active':''} aria-current={view==='profile'?'page':undefined} onClick={()=>navigate('profile')}><Icon name="flag"/>My progress</button>
+      </nav>
+      <div className="sidebar-bottom"><XPPanel compact/><button className={`parent-link ${view==='parent'?'active':''}`} aria-current={view==='parent'?'page':undefined} onClick={()=>navigate('parent')}><Icon name="parent"/>Parent setup</button><div className="sidebar-profile"><Avatar/><div><strong>Jaxon</strong><span>Game developer in the making</span></div></div></div>
+    </aside>
+    <div className="workspace"><header className="topbar"><span><span className="status-dot"/>Your academy · On this computer</span><span className="development-tag">IN DEVELOPMENT</span></header>
+    <main id="main-content" tabIndex={-1}>
+    {view==='profile'?<Profile/>:view !== 'parent' ? <Library key={view} revision={revision} home={view==='learn'} welcome={message}/> : <div className="parent-page">
+    <header className="page-heading"><p className="eyebrow">PARENT WORKSPACE</p><h1>Help great ideas grow.</h1><p>Review lessons, encourage experiments, and celebrate learning.</p></header>
+    <ParentGuidedLessons/>
     <ParentImport onImported={() => setRevision(value => value + 1)}/>
     <section aria-labelledby="foundation"><h2 id="foundation">Development status</h2>
       <p role="status">{status}</p>
-      <p>Course playback is available. Quizzes, practical assignments, accounts, XP, and AI are future milestones.</p>
+      <p>Guided lessons, knowledge checks, parent-reviewed practice and XP are available. Accounts and AI services remain future work.</p>
     </section>
     <section aria-labelledby="local"><h2 id="local">Make it yours</h2>
       <p>Set a welcome message. It stays here when the app restarts.</p>
@@ -54,8 +67,8 @@ function App() {
         <input id="message" value={message} onChange={e => setMessage(e.target.value)} required maxLength={200} disabled={!ready || saving}/>
         <button disabled={!ready || saving}>{saving ? 'Saving…' : 'Save message'}</button>
       </form><p role="status">{feedback}</p>
-    </section></>}<footer>Local development · Your data stays on this computer</footer>
-  </main>;
+    </section></div>}<footer><Icon name="cube" size={16}/>Unreal Academy <span>Learn a little. Build something. Make it yours.</span></footer>
+  </main></div></div>;
 }
 
 createRoot(document.getElementById('root')!).render(<App/>);

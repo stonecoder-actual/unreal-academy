@@ -17,7 +17,7 @@ Read docs/PROJECT_SPEC.md before implementing features.
 - Do not publish or distribute purchased curriculum.
 
 ## Current milestone
-Phase 2: Local course import and lesson playback.
+Phase 3: Guided lessons, knowledge checks, parent-reviewed practice and XP.
 
 ## Required stack
 - React and TypeScript
@@ -37,4 +37,8 @@ Phase 2: Local course import and lesson playback.
 - Video range requests, matching subtitles, and resource downloads work.
 - Playback position and watched state persist across restarts.
 - Existing Phase 1 data is backed up before schema migration.
-- Quizzes, assignment review, authentication, gamification, and AI remain future work.
+- Correct knowledge checks earn XP once; retries, duplicate requests and restarts cannot farm awards.
+- Generated lessons require parent review and approval before student publication.
+- Watched, quiz understanding and demonstrated practice remain separate states.
+- Purchased transcripts and derived course-specific curriculum stay in Git-ignored local data.
+- Authentication and live AI integration remain future work.

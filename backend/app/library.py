@@ -62,12 +62,13 @@ def srt_to_vtt(path: Path):
     text = path.read_text(encoding='utf-8-sig').replace('\r\n', '\n')
     # Do not pass arbitrary subtitle markup through to the browser.
     text = re.sub(r'<[^>]*>', '', text)
-    text = re.sub(r'(\d{2}:\d{2}:\d{2}),(\d{3})', r'\1.\2', text)
+    text = re.sub(r'(\d{2}:\d{2}:\d{2}),(\d{1,3})', lambda m: m[1] + '.' + m[2].ljust(3, '0'), text)
     return 'WEBVTT\n\n' + text
 
 
 class ImportRequest(BaseModel):
     folder: str = Field(min_length=1, max_length=500)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
 
 
 class ProgressUpdate(BaseModel):
@@ -101,9 +102,9 @@ def create_library_router(database: Path, root: Path):
     @router.post('/courses/import')
     def import_course(payload: ImportRequest):
         folder = safe_path(root, payload.folder)
-        # Each direct child folder represents one course.
-        if folder.parent != root.resolve() or not folder.is_dir() or folder.is_symlink():
-            raise HTTPException(400, 'Select a course folder directly inside the library')
+        if not folder.is_dir() or folder.is_symlink():
+            raise HTTPException(400, 'Select a course folder inside the library')
+        folder_key = folder.relative_to(root.resolve()).as_posix()
         if not import_lock.acquire(blocking=False):
             raise HTTPException(409, 'Another import is running; try again when it finishes')
         try:
@@ -114,7 +115,7 @@ def create_library_router(database: Path, root: Path):
             relative_files = {p.relative_to(folder).as_posix(): p for p in files}
             warnings = []
             with connect(database) as db:
-                course = db.execute('SELECT * FROM courses WHERE folder=?', (folder.name,)).fetchone()
+                course = db.execute('SELECT * FROM courses WHERE folder=?', (folder_key,)).fetchone()
                 course_id = course['id'] if course else str(uuid.uuid4())
                 old = list(db.execute('SELECT * FROM lessons WHERE course_id=?', (course_id,)))
                 by_path = {row['relative_path']: row for row in old}
@@ -133,6 +134,10 @@ def create_library_router(database: Path, root: Path):
                 metadata = (previous['duration'], previous['video_codec'], previous['audio_codec'], previous['playable']) if unchanged else probe(video)
                 captions = [p for name, p in relative_files.items()
                             if p.parent == video.parent and p.stem.casefold() == video.stem.casefold() and p.suffix.lower() == '.srt']
+                if not captions:
+                    # Some exports insert a language tag before the source suffix.
+                    captions = [p for p in files if p.parent == video.parent and p.suffix.lower() == '.srt'
+                                and re.sub(r'-(english|en)(?=-|$)', '', p.stem, flags=re.I).casefold() == video.stem.casefold()]
                 caption = captions[0].relative_to(folder).as_posix() if len(captions) == 1 else None
                 if caption:
                     try:
@@ -144,7 +149,9 @@ def create_library_router(database: Path, root: Path):
                     warnings.append(f'{relative}: unverified or unsupported video/audio codecs; see conversion instructions')
                 records.append((relative, content_hash, stat, metadata, caption))
             with connect(database) as db:
-                db.execute('INSERT OR IGNORE INTO courses(id,folder,title) VALUES(?,?,?)', (course_id, folder.name, folder.name))
+                db.execute('INSERT OR IGNORE INTO courses(id,folder,title) VALUES(?,?,?)', (course_id, folder_key, payload.title or folder.name))
+                if payload.title:
+                    db.execute('UPDATE courses SET title=? WHERE id=?', (payload.title.strip(), course_id))
                 db.execute('UPDATE lessons SET available=0 WHERE course_id=?', (course_id,))
                 db.execute('UPDATE resources SET available=0 WHERE course_id=?', (course_id,))
                 matched = set()

@@ -1,0 +1,9 @@
+# Local snapshot verification. Never points writes at the real student database.
+services:
+  backend:
+    volumes: !override
+      - ./data/phase3-verification:/data
+      - ${COURSES_DIR:-./courses}:/courses:ro
+  frontend:
+    ports: !override
+      - "127.0.0.1:3002:80"
