@@ -1,0 +1,9 @@
+# Isolated UI regression database. Course originals remain read-only.
+services:
+  backend:
+    volumes: !override
+      - ./data/design-verification:/data
+      - ${COURSES_DIR:-./courses}:/courses:ro
+  frontend:
+    ports: !override
+      - "127.0.0.1:3004:80"

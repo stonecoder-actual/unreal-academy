@@ -6,15 +6,18 @@ import { Library, ParentImport } from './Library';
 import { ParentGuidedLessons } from './Guided';
 import { XPPanel, Profile } from './Progress';
 import { Avatar, Icon } from './UI';
+import { DesignPreview, ResponsivePreview } from './DesignPreview';
 
 function App() {
   const [view, setView] = useState<'learn' | 'courses' | 'profile' | 'parent'>('learn');
   const [revision, setRevision] = useState(0);
+  const [navigationKey,setNavigationKey]=useState(0);
   const [status, setStatus] = useState('Connecting to backend…');
   const [message, setMessage] = useState('');
   const [feedback, setFeedback] = useState('');
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
+  useEffect(()=>{document.getElementById('main-content')?.focus();},[view]);
   useEffect(() => {
     Promise.all([request('/api/health'), request('/api/settings')])
       .then(([health, settings]) => {
@@ -38,7 +41,7 @@ function App() {
     } catch { setFeedback('Save failed. Please try again.'); }
     finally { setSaving(false); }
   }
-  function navigate(next:typeof view){setView(next);window.scrollTo({top:0});}
+  function navigate(next:typeof view){setView(next);setNavigationKey(n=>n+1);window.scrollTo({top:0});}
   return <div className="app-shell">
     <a className="skip-link" href="#main-content">Skip to learning</a>
     <aside className="app-sidebar">
@@ -53,7 +56,7 @@ function App() {
     </aside>
     <div className="workspace"><header className="topbar"><span><span className="status-dot"/>Your academy · On this computer</span><span className="development-tag">IN DEVELOPMENT</span></header>
     <main id="main-content" tabIndex={-1}>
-    {view==='profile'?<Profile/>:view !== 'parent' ? <Library key={view} revision={revision} home={view==='learn'} welcome={message}/> : <div className="parent-page">
+    {view==='profile'?<Profile/>:view !== 'parent' ? <Library key={`${view}-${navigationKey}`} revision={revision} home={view==='learn'} welcome={message}/> : <div className="parent-page">
     <header className="page-heading"><p className="eyebrow">PARENT WORKSPACE</p><h1>Help great ideas grow.</h1><p>Review lessons, encourage experiments, and celebrate learning.</p></header>
     <ParentGuidedLessons/>
     <ParentImport onImported={() => setRevision(value => value + 1)}/>
@@ -71,4 +74,5 @@ function App() {
   </main></div></div>;
 }
 
-createRoot(document.getElementById('root')!).render(<App/>);
+const previewParams=new URLSearchParams(location.search);
+createRoot(document.getElementById('root')!).render(import.meta.env.DEV && previewParams.has('design-preview') ? <DesignPreview/> : import.meta.env.DEV && previewParams.has('responsive-preview') ? <ResponsivePreview size={previewParams.get('responsive-preview')??'phone'}/> : <App/>);

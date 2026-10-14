@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { request } from './api';
+import { Icon, Meter } from './UI';
 
 type XP = {total_xp:number;level:number;level_xp:number;xp_per_level:number;xp_to_next_level:number};
 type Question = {id:string;section:string;prompt:string;options:string[];correct?:number;explanation?:string;hint:string;xp:number};
@@ -11,21 +12,6 @@ type Submission = {id:string;guide_id:string;evidence:string;status:string;feedb
 type Guide = {id:string;status:string;document:Document;solved:string[];submission:Submission|null;xp:XP;source_error?:string|null};
 const xpChanged = () => window.dispatchEvent(new Event('academy-xp'));
 const time = (seconds:number) => `${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
-
-export function XPBar() {
-  const [xp,setXP] = useState<XP|null>(null);
-  const [error,setError] = useState('');
-  useEffect(() => {
-    const refresh = () => request('/api/xp').then(result => {setXP(result);setError('');}).catch(() => setError('XP is unavailable. Your saved awards have not been reset.'));
-    void refresh(); window.addEventListener('academy-xp',refresh);
-    return () => window.removeEventListener('academy-xp',refresh);
-  },[]);
-  return <div className="xp-bar" aria-label="Jaxon's level">{xp ? <>
-    <strong>Level {xp.level}</strong><span>{xp.total_xp} XP total</span>
-    <progress value={xp.level_xp} max={xp.xp_per_level} aria-label="Progress to next level"/>
-    <span>{xp.xp_to_next_level} XP to Level {xp.level+1}</span>
-  </> : <span>{error || 'Loading XP…'}</span>}</div>;
-}
 
 function Check({question,guideId,solved,onSaved}:{question:Question;guideId:string;solved:boolean;onSaved:()=>void}) {
   const [answer,setAnswer] = useState('');
@@ -63,12 +49,12 @@ function PracticeTask({guide,onSaved}:{guide:Guide;onSaved:()=>void}) {
     try {await request(`/api/guides/${guide.id}/practice`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prediction,observation,explanation})});onSaved();}
     catch(e) {setError((e as Error).message);}finally{setBusy(false);}
   }
-  return <section><h3>{task.title}</h3><p>Optional hands-on challenge · about {task.estimated_minutes} minutes · {task.xp} XP after parent approval</p>
+  return <section className="practice-task"><p className="eyebrow">03 / BUILD & SHOW</p><h3>{task.title}</h3><p>Optional hands-on challenge · about {task.estimated_minutes} minutes · {task.xp} XP after parent approval</p>
     <p>You can do this on another day. Quiz answers do not prove practical skill.</p>
     <ol>{task.steps.map(step => <li key={step}>{step}</li>)}</ol>
     <h4>What to show your parent</h4><ul>{task.criteria.map(item => <li key={item}>{item}</li>)}</ul>
     <details><summary>Something did not work?</summary><ul>{task.troubleshooting.map(item => <li key={item}>{item}</li>)}</ul></details>
-    {submission && <div role="status"><strong>{submission.status === 'approved' ? 'Practice approved · XP earned once' : submission.status === 'pending' ? 'Waiting for parent review · no XP awarded yet' : 'Your parent asked for another attempt'}</strong><p>{submission.feedback}</p></div>}
+    {submission && <div className={`practice-feedback ${submission.status}`} role="status"><Icon name={submission.status==='approved'?'check':'flag'}/><div><strong>{submission.status === 'approved' ? 'Build approved. You brought the idea to life!' : submission.status === 'pending' ? 'Ready for your parent’s feedback' : 'A new attempt, with a little guidance'}</strong><p>{submission.feedback||'Your work is saved. Show your parent what you made in Unreal Engine.'}</p><small>{submission.status==='approved'?'Practice XP earned once.':submission.status==='pending'?'XP is awarded after your parent approves the work.':'Use the feedback above and tell us what changed.'}</small></div></div>}
     {(!submission || submission.status==='changes_requested') && <form onSubmit={submit}>
       <label htmlFor="prediction">What did you predict would happen?</label><textarea id="prediction" minLength={20} maxLength={2000} required value={prediction} onChange={e=>setPrediction(e.target.value)}/>
       <label htmlFor="observation">What actually happened in Unreal Engine?</label><textarea id="observation" minLength={20} maxLength={2000} required value={observation} onChange={e=>setObservation(e.target.value)}/>
@@ -81,18 +67,22 @@ function PracticeTask({guide,onSaved}:{guide:Guide;onSaved:()=>void}) {
 
 export function GuidedLesson({lessonId,onSeek}:{lessonId:string;onSeek:(seconds:number)=>void}) {
   const [guide,setGuide]=useState<Guide|null>(null);const [error,setError]=useState('');
-  async function refresh(){try{setGuide(await request(`/api/lessons/${lessonId}/guide`));setError('');}catch(e){setError((e as Error).message);}}
+  const [loading,setLoading]=useState(true);
+  async function refresh(){try{setGuide(await request(`/api/lessons/${lessonId}/guide`));setError('');}catch(e){setError((e as Error).message);}finally{setLoading(false);}}
   useEffect(()=>{void refresh();},[lessonId]);
   if(error)return <p role="alert">Guided lesson unavailable: {error}</p>;
+  if(loading)return <p role="status" className="loading-state">Checking for a guided mission…</p>;
   if(!guide)return null;
   const doc=guide.document;
-  return <div className="guided-lesson"><h2>{doc.title}</h2><p>{doc.overview}</p>
-    <p className="mission-progress">{guide.solved.length}/{doc.questions.length} checks answered correctly · {doc.questions.reduce((sum,q)=>sum+q.xp,0)} quiz XP available in total</p>
+  return <div className="guided-lesson"><p className="eyebrow">YOUR GUIDED MISSION</p><h2>{doc.title.replace(/^Mission:\s*/,'')}</h2><p>{doc.overview}</p>
+    <ol className="learning-steps" aria-label="How a guided mission works"><li><Icon name="play"/><span><strong>01 · Watch</strong><small>Explore the idea</small></span></li><li><Icon name="check"/><span><strong>02 · Understand</strong><small>Explain and check</small></span></li><li><Icon name="cube"/><span><strong>03 · Build</strong><small>Try it in Unreal</small></span></li></ol>
+    <div className="mission-progress"><div><strong>{guide.solved.length} of {doc.questions.length} checks solved</strong><span><Icon name="spark" size={15}/>{doc.questions.reduce((sum,q)=>sum+q.xp,0)} quiz XP total</span></div><Meter value={guide.solved.length} max={doc.questions.length} label="Guided mission checks solved"/></div>
+    {guide.solved.length===doc.questions.length&&<div className="answer-feedback correct" role="status"><strong>All checks solved. Ready to put the ideas to work?</strong><p>Try the optional build below when you're ready, or revisit any section for practice.</p></div>}
     <details><summary>Before you start · navigation warm-up</summary><ul>{doc.prerequisites.map(item=><li key={item}>{item}</li>)}</ul></details>
     <h3>Your goals</h3><ul>{doc.objectives.map(item=><li key={item}>{item}</li>)}</ul>
     <p>Watch a section, pause, explain the idea, then answer its checks. Hints and retries are welcome. Watching or replaying does not earn XP.</p>
     {doc.sections.map((section,index)=><details className="guide-section" key={section.id} open={index===0?true:undefined}>
-      <summary>{section.title} · {time(section.start)}–{time(section.end)}</summary>
+      <summary><span>{section.title}</span><small>{time(section.start)}–{time(section.end)} · {doc.questions.filter(q=>q.section===section.id&&guide.solved.includes(q.id)).length}/{doc.questions.filter(q=>q.section===section.id).length} checks</small></summary>
       <p><strong>Goal:</strong> {section.objective}</p><button className="secondary" onClick={()=>onSeek(section.start)}>Watch from {time(section.start)}</button>
       <ul>{section.notes.map(note=><li key={note}>{note}</li>)}</ul><p className="pause-prompt">Pause and think: {section.pause_prompt}</p>
       {doc.questions.filter(q=>q.section===section.id).map(q=><Check key={q.id} question={q} guideId={guide.id} solved={guide.solved.includes(q.id)} onSaved={refresh}/>)}</details>)}
@@ -126,10 +116,13 @@ function ReviewWork({submission,guide,onSaved}:{submission:Submission;guide:Guid
 
 export function ParentGuidedLessons() {
   const [guides,setGuides]=useState<Guide[]>([]);const [submissions,setSubmissions]=useState<Submission[]>([]);const [error,setError]=useState('');const [busy,setBusy]=useState(false);
-  async function refresh(){try{const [g,s]=await Promise.all([request('/api/parent/guides'),request('/api/parent/submissions')]);setGuides(g);setSubmissions(s);}catch(e){setError((e as Error).message);}}
+  const [loading,setLoading]=useState(true);
+  async function refresh(){try{const [g,s]=await Promise.all([request('/api/parent/guides'),request('/api/parent/submissions')]);setGuides(g);setSubmissions(s);setError('');}catch(e){setError((e as Error).message);}finally{setLoading(false);}}
   useEffect(()=>{void refresh();},[]);
   async function publish(id:string){setBusy(true);try{await request(`/api/parent/guides/${id}/publish`,{method:'POST'});await refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
   return <section><h2>Guided lessons · parent review</h2><p>Review the objectives, explanations, answer key and practical criteria before publishing a draft for Jaxon. Nothing earns XP until it is published and answered or approved.</p>
+    {loading&&<p role="status">Loading lessons and review requests…</p>}
+    {!loading&&!error&&!guides.length&&<div className="empty-state"><Icon name="book"/><h3>No guided lessons yet</h3><p>Your authored drafts will appear here for review before Jaxon sees them.</p></div>}
     {error&&<p role="alert">{error}</p>}{guides.map(guide=><article key={guide.id}><h3>{guide.document.title} · {guide.status}</h3><p>{guide.document.overview}</p>
       {guide.source_error&&<p role="alert">{guide.source_error}</p>}
       <details><summary>Review the full lesson and answer key</summary>
@@ -143,7 +136,7 @@ export function ParentGuidedLessons() {
       </details>
       {guide.status==='draft'&&<button disabled={busy||!!guide.source_error} onClick={()=>publish(guide.id)}>Approve lesson for Jaxon</button>}
     </article>)}
-    <h3>Practical work awaiting feedback</h3>{submissions.length?submissions.map(s=><ReviewWork key={s.id} submission={s} guide={guides.find(g=>g.id===s.guide_id)} onSaved={refresh}/>):<p>No submissions yet.</p>}
+    <h3>Practical work & feedback</h3>{submissions.length?submissions.map(s=><ReviewWork key={s.id} submission={s} guide={guides.find(g=>g.id===s.guide_id)} onSaved={refresh}/>):!loading&&!error&&<p>No submissions yet. When Jaxon shares a build, you can review it here together.</p>}
     <p className="muted">Parent setup is not password protected; anyone using this local app can access it.</p>
   </section>;
 }
