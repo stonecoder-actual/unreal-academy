@@ -308,3 +308,16 @@ a course to a different top-level folder name is not automatically reconciled.
 `compose.yaml` defines runtime services and an isolated test profile.
 `docs/` contains project requirements and agent instructions.
 `.github/workflows/verify.yml` provides automated build/test verification.
+
+## Learner interface redesign
+
+The dashboard, course library, learning workspace, progress profile and parent
+review screens share a responsive visual system. XP and learning records reflect
+saved results. Badge and cosmetic concepts remain development-only demonstrations.
+
+See [design audit and rationale](docs/DESIGN_REDESIGN.md) and
+[verification results and limitations](docs/DESIGN_VERIFICATION.md).
+Run `./tests/verify-design.ps1` for read-only live endpoint/media smoke checks.
+The isolated UI test override is `tests/compose.design-verification.yaml`; use
+project name `unreal-academy-design-verification` with both Compose files to keep
+its database separate. Never run reward tests against Jaxon's live database.
