@@ -43,7 +43,7 @@ No unverified transcript timestamps are invented.
 All are excluded from Git by `data/`. The importer binds each guide to its
 current external lesson and captured transcript hash. The batch validator
 checks that the hash still matches the reviewed source before importing.
-Private JSON must be transferred separately when installing on Jaxon's laptop;
+Private JSON must be transferred separately when installing on the learner's laptop;
 Git application updates do not carry curriculum or replace learner databases.
 
 ## Executed verification

@@ -7,7 +7,7 @@ export function ResponsivePreview({size}:{size:string}) {
 
 // Development only. No learner data, awards, or preferences are written here.
 export function DesignPreview() {
-  return <main className="design-preview"><header className="page-heading"><p className="eyebrow">DESIGN DEMONSTRATION · SAMPLE STATES</p><h1>Progression design studio</h1><p>These examples are not Jaxon's progress. Badges and avatar unlocks need future persistence and reward rules.</p></header>
+  return <main className="design-preview"><header className="page-heading"><p className="eyebrow">DESIGN DEMONSTRATION · SAMPLE STATES</p><h1>Progression design studio</h1><p>These examples are not the learner's progress. Badges and avatar unlocks need future persistence and reward rules.</p></header>
     <section><h2>XP & level states</h2><div className="preview-grid">
       <article><LevelRing level={1} percent={0}/><h3>Just beginning</h3><p>0 of 100 XP · Sample</p><Meter value={0} max={100} label="Sample empty level"/></article>
       <article><LevelRing level={1} percent={70}/><h3>A milestone in reach</h3><p>30 XP to Level 2 · Sample</p><Meter value={70} max={100} label="Sample partial level"/></article>

@@ -28,7 +28,7 @@ export function useXP() {
 
 export function XPPanel({compact=false}:{compact?:boolean}) {
   const {xp,error,celebration,dismiss}=useXP();
-  return <div className={compact?'xp-panel compact':'xp-panel'} aria-label="Jaxon's level">
+  return <div className={compact?'xp-panel compact':'xp-panel'} aria-label="Your level">
     {xp ? <><div className="xp-heading"><Icon name="spark"/><strong>Level {xp.level}</strong><span>{xp.total_xp} XP</span></div>
       <Meter value={xp.level_xp} max={xp.xp_per_level} label="Progress to next level"/>
       <p>{xp.xp_to_next_level} XP to Level {xp.level+1}</p>
@@ -69,7 +69,7 @@ export function Evidence({full=false}:{full?:boolean}) {
 export function Profile() {
   const {xp,error}=useXP();
   return <div className="profile-page"><header className="page-heading"><p className="eyebrow">YOUR DEVELOPER JOURNEY</p><h1>Look what you're learning.</h1><p>Every idea understood. Every experiment tried. It all adds up.</p></header>
-    <section className="profile-hero"><Avatar large/><div><p className="eyebrow">ACADEMY EXPLORER</p><h2>Jaxon</h2><p>Learning to bring new worlds to life.</p></div>{xp?<div className="profile-level"><LevelRing level={xp.level} percent={xp.level_xp/xp.xp_per_level*100}/><div><strong>{xp.total_xp} XP earned</strong><p>{xp.xp_to_next_level} XP to your next level</p></div></div>:<p role={error?'alert':'status'}>{error||'Loading your level…'}</p>}</section>
+    <section className="profile-hero"><Avatar large/><div><p className="eyebrow">ACADEMY EXPLORER</p><h2>Learner</h2><p>Learning to bring new worlds to life.</p></div>{xp?<div className="profile-level"><LevelRing level={xp.level} percent={xp.level_xp/xp.xp_per_level*100}/><div><strong>{xp.total_xp} XP earned</strong><p>{xp.xp_to_next_level} XP to your next level</p></div></div>:<p role={error?'alert':'status'}>{error||'Loading your level…'}</p>}</section>
     <div className="section-heading"><div><p className="eyebrow">REAL PROGRESS</p><h2>What you can show</h2></div></div><Evidence full/>
     <aside className="learning-note"><Icon name="spark"/><p>Correct knowledge checks earn XP once. Follow the Udemy instructor for activities in Unreal Engine; your level is a progress marker.</p></aside>
   </div>;

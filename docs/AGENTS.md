@@ -3,6 +3,7 @@
 Read docs/PROJECT_SPEC.md before implementing features.
 
 ## Development rules
+- Keep personal names out of tracked files and future commit identities; use generic learner/developer labels.
 - Work on one implementation milestone at a time.
 - Do not implement unrelated future features.
 - Prefer small, maintainable changes.
@@ -18,7 +19,7 @@ Read docs/PROJECT_SPEC.md before implementing features.
 
 ## Current milestone
 Phase 4: Windows laptop deployment and controlled Git updates preserving progress.
-Current learning task: simplify Udemy to transcript-based key takeaways and 3–6 automatically checked questions per video; finish the remaining curriculum with Sam next.
+Current learning task: simplify Udemy to transcript-based key takeaways and 3–6 automatically checked questions per video; finish the remaining curriculum with the project owner next.
 
 ## Required stack
 - React and TypeScript

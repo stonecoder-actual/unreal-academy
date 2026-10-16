@@ -1,10 +1,10 @@
 # Simple Udemy lessons — 16 October 2026
 
-Sam requested a smaller learning flow: each Udemy video gets transcript-based
+The project owner requested a smaller learning flow: each Udemy video gets transcript-based
 key takeaways and 3–6 automatic multiple-choice checks, depending on complexity.
 Udemy handles the UE5 practical work. No guided-mission framing, custom
 activities, written answers or parent grading. Remaining curriculum authoring
-continues with Sam after this format change.
+continues with the project owner after this format change.
 
 ## Delivered
 
@@ -49,7 +49,7 @@ continues with Sam after this format change.
   synthetic lesson: install/import, updates, idle deferral, no-op, dirty/offline
   refusal, interrupted-update recovery, preservation of newer learner writes,
   unhealthy-release recovery and retained synthetic XP/playback. That test stack
-  was stopped; Jaxon's data was not used. Test fixture copying now tolerates
+  was stopped; the learner's data was not used. Test fixture copying now tolerates
   tracked files removed in the working tree.
 
 ## Remaining

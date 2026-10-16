@@ -62,6 +62,6 @@ to parent controls or local files from seeing answers. Authentication is separat
 - Source changes stop use of stale curriculum; published content is immutable.
 - Student and parent interfaces render, section buttons seek correctly, feedback
   and earned state survive refresh, and XP/level progress updates from the server.
-- Test using separate generated-media data; leave Jaxon's real XP untouched.
+- Test using separate generated-media data; leave the learner's real XP untouched.
 - Actual draft is fully available for parent review; publication is the parent's
   final content decision, after implementation and verification are complete.

@@ -33,7 +33,7 @@ Public product pages and official documentation reviewed on October 14, 2026. Au
 | [Brilliant features](https://brilliant.org/help/features/) | Guided learning with interactive practice checkpoints | Watch → understand → build, with nearby hints and explanatory feedback |
 | [Khan Academy mastery](https://support.khanacademy.org/hc/en-us/articles/360007253831-What-is-self-paced-Mastery) | Skills are measured through assessment | Separate watched videos, correct checks and approved practical work |
 
-These sources establish product patterns, not proof that this redesign improves Jaxon's outcomes. The dark palette, geometric artwork and violet identity are design judgments, chosen to suit his existing preference and the game-development context. Validate comprehension with Jaxon in actual use.
+These sources establish product patterns, not proof that this redesign improves the learner's outcomes. The dark palette, geometric artwork and violet identity are design judgments, chosen to suit his existing preference and the game-development context. Validate comprehension with the learner in actual use.
 
 Accessibility reference: [WCAG text contrast](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) requires 4.5:1 for ordinary text, 3:1 for qualifying large text. [Target size guidance](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html) informs hit areas; this UI aims for 44px controls. Labels and icons accompany semantic colors.
 

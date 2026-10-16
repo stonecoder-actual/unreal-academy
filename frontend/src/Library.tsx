@@ -186,7 +186,7 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
     {error && <p role="alert">{error}</p>}
     {loading && <p role="status">Loading your library…</p>}
     {!course ? <>
-      <header className="page-heading"><p className="eyebrow">{home?'YOUR NEXT GREAT IDEA STARTS HERE':'EXPLORE. LEARN. CREATE.'}</p><h1>{home?'Welcome back, Jaxon.':'Your course library.'}</h1><p>{home?(welcome||'A little curiosity. A new skill. A world of possibilities.'):'Choose your next adventure in game development.'}</p></header>
+      <header className="page-heading"><p className="eyebrow">{home?'YOUR NEXT GREAT IDEA STARTS HERE':'EXPLORE. LEARN. CREATE.'}</p><h1>{home?'Welcome back.':'Your course library.'}</h1><p>{home?(welcome||'A little curiosity. A new skill. A world of possibilities.'):'Choose your next adventure in game development.'}</p></header>
       {home&&<>
         <section className="mission-hero"><div className="mission-copy"><span className="pill"><Icon name="play" size={16}/>{featured?.source_type==='udemy'?'START HERE · UDEMY':'YOUR NEXT LESSON'}</span>
           <h2>{featured?.title??'Your next step in Unreal Engine'}</h2>

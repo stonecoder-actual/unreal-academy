@@ -52,12 +52,12 @@ function App() {
         <button className={view==='courses'?'active':''} aria-current={view==='courses'?'page':undefined} onClick={()=>navigate('courses')}><Icon name="library"/>Course library</button>
         <button className={view==='profile'?'active':''} aria-current={view==='profile'?'page':undefined} onClick={()=>navigate('profile')}><Icon name="flag"/>My progress</button>
       </nav>
-      <div className="sidebar-bottom"><XPPanel compact/><button className={`parent-link ${view==='parent'?'active':''}`} aria-current={view==='parent'?'page':undefined} onClick={()=>navigate('parent')}><Icon name="parent"/>Parent setup</button><div className="sidebar-profile"><Avatar/><div><strong>Jaxon</strong><span>Game developer in the making</span></div></div></div>
+      <div className="sidebar-bottom"><XPPanel compact/><button className={`parent-link ${view==='parent'?'active':''}`} aria-current={view==='parent'?'page':undefined} onClick={()=>navigate('parent')}><Icon name="parent"/>Parent setup</button><div className="sidebar-profile"><Avatar/><div><strong>Learner</strong><span>Game developer in the making</span></div></div></div>
     </aside>
     <div className="workspace"><header className="topbar"><span><span className="status-dot"/>Your academy · On this computer</span><span className="development-tag">IN DEVELOPMENT</span></header>
     <main id="main-content" tabIndex={-1}>
     {view==='profile'?<Profile/>:view !== 'parent' ? <Library key={`${view}-${navigationKey}`} revision={revision} home={view==='learn'} welcome={message}/> : <div className="parent-page">
-    <header className="page-heading"><p className="eyebrow">PARENT WORKSPACE</p><h1>Set up Jaxon’s academy.</h1><p>Connect the video library, manage course imports, and adjust local settings. Lesson takeaways and checks appear directly in Jaxon’s learning portal.</p></header>
+    <header className="page-heading"><p className="eyebrow">PARENT WORKSPACE</p><h1>Academy setup.</h1><p>Connect the video library, manage course imports, and adjust local settings. Lesson takeaways and checks appear directly in the learning portal.</p></header>
     <ParentImport onImported={() => setRevision(value => value + 1)}/>
     <ParentExternalImport onImported={() => setRevision(value => value + 1)}/>
     <section aria-labelledby="foundation"><h2 id="foundation">Development status</h2>

@@ -22,7 +22,7 @@ not a prerequisite for testing the laptop deployment. See `PROJECT_STATUS.md`.
 - Recover interrupted switches before Git access; never restore an older database
   after a frontend may have accepted newer learner writes.
 - Document first-time private snapshot transfer and course copy; later app updates
-  cannot replace Jaxon's database or silently distribute purchased curriculum.
+  cannot replace the learner's database or silently distribute purchased curriculum.
 
 ## Acceptance
 
@@ -36,8 +36,8 @@ not a prerequisite for testing the laptop deployment. See `PROJECT_STATUS.md`.
 5. Deliberately broken backend release recovers the previous release/data. Both
    pre-exposure and post-exposure interrupted switches preserve learner state.
 6. Compose config, frontend build and live development health still pass.
-7. Git publication and actual Jaxon laptop setup are separate final steps. Do not
-   describe them as completed by isolated tests on Sam's computer.
+7. Git publication and actual learner laptop setup are separate final steps. Do not
+   describe them as completed by isolated tests on the developer's computer.
 
 ## Remaining release work
 

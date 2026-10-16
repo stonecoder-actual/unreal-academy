@@ -39,18 +39,18 @@
 5. Final live read-only smoke checks passed: frontend/same-origin health, three
    local course video ranges/captions, external link inventory and production
    preview exclusion. Both development services are healthy; only
-   `127.0.0.1:3000` is published. Jaxon's **15 XP**, three solved lesson 3 checks
+   `127.0.0.1:3000` is published. the learner's **15 XP**, three solved lesson 3 checks
    and completion were unchanged.
 6. Created and verified a consistent private initial-transfer snapshot at
    `data/backups/deployments/20261016T194835Z-e31a7c325b10467ba8f1c1da682ee3a5.sqlite3`.
    Its matching JSON manifest verified existing records without writing learner
    progress. This snapshot remains Git-ignored; copy it privately when deploying.
 
-The integration tests do not use Jaxon's live database or push to GitHub. A first
+The integration tests do not use the learner's live database or push to GitHub. A first
 task-definition test mistakenly registered its disposable test task because of
 Windows module autoload replacing its stub; that task was immediately disabled
 and removed. Final tests construct definitions without calling registration.
-The temporary task was confirmed absent; no updater was enabled on Sam's machine.
+The temporary task was confirmed absent; no updater was enabled on the developer's machine.
 
 ## What still needs real-world acceptance
 
@@ -58,11 +58,11 @@ The temporary task was confirmed absent; no updater was enabled on Sam's machine
   The remote may already contain an earlier deployment iteration; the final
   working tree still needs publication. No commits/pushes were made by this task
   to the application repository; test commits used local disposable origins.
-- Actual installation on Jaxon's laptop, its private-repository credentials,
+- Actual installation on the learner's laptop, its private-repository credentials,
   Docker auto-start and an actual scheduled run under his Windows account.
 - Initial private snapshot/video transfer and a check that all paths/media work
   after moving to the laptop. Follow the guide's laptop acceptance checklist.
-- Per Sam's choice, new/revised missions transfer privately for now. Automatic
+- Per the developer's choice, new/revised missions transfer privately for now. Automatic
   updates deliver app code, not copyrighted transcripts or authored database rows.
 - Retention cleanup/off-device disaster recovery and immutable registry/image
   distribution remain future work. Backups/releases are not pruned automatically.

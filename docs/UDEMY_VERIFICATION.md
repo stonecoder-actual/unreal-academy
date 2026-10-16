@@ -79,7 +79,7 @@ screens were checked on desktop; the existing responsive styles are retained,
 but a new physical mobile/touch or screen-reader audit was not performed.
 
 Inspecting the Assets for the Course reading caused Udemy itself to mark that
-reading complete automatically. Sam subsequently chose to leave it complete;
+reading complete automatically. the project owner subsequently chose to leave it complete;
 no cleanup is pending. This is Udemy state, separate from the untouched portal
 completion/XP records. The signed-in browser may also retain brief playback
 positions from inspecting video transcripts.

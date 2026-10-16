@@ -1,7 +1,7 @@
 ## Current product policy — 16 October 2026
 
-Sam removed the parent lesson-approval workflow. New missions publish directly
-to Jaxon's learning portal; corrections are applied directly through reimport.
+The project owner removed the parent lesson-approval workflow. New missions publish directly
+to the learning portal; corrections are applied directly through reimport.
 Parent setup is for course locations/imports, transcript administration and local
 settings. No lesson review queue, publication approval or required practical-work
 grading belongs in that interface. All correct knowledge checks complete a
@@ -36,7 +36,7 @@ The original three local courses retain their local video player.
   Do not manufacture timestamps. No automatic lesson-authoring service exists.
 - A transcript being captured does not mean a personalized mission is ready.
   Lessons without an authored mission show that one is coming soon.
-  Importing an authored guide publishes it directly to Jaxon.
+  Importing an authored guide publishes it directly to the learner.
 
 ## Import a private manifest
 

@@ -1,24 +1,24 @@
 ## Current learning format — 16 October 2026
 
-Sam simplified Udemy learning: review each video's actual transcript, highlight
-the key takeaways Jaxon needs to understand, and provide 3–6 automatically
+The project owner simplified Udemy learning: review each video's actual transcript, highlight
+the key takeaways the learner needs to understand, and provide 3–6 automatically
 checked multiple-choice questions, depending on the video's complexity. Place
 all questions after the takeaways. No guided missions, generated activities,
 projects, reflection prompts, written explanations or parent grading. Udemy's
-instructor supplies the practical activities; Jaxon follows along in UE5.
+instructor supplies the practical activities; the learner follows along in UE5.
 Put the purchased Blueprints Udemy course first on the homepage and feature it
 as his starting course. Keep saved answers, progress and once-only XP.
 
 This replaces earlier mission/optional-activity plans. The three already-authored
 Udemy lessons are being converted now; authoring the remaining video curriculum
-is the next step with Sam. Captured transcripts are source material, not finished
+is the next step with the project owner. Captured transcripts are source material, not finished
 lessons. Continue publishing lesson notes directly, with private manual content
 transfer and automatic Git application updates as already agreed.
 
 ## Current product policy — 16 October 2026
 
-Sam removed the parent lesson-approval workflow. New missions publish directly
-to Jaxon's learning portal; corrections are applied directly through reimport.
+The project owner removed the parent lesson-approval workflow. New missions publish directly
+to the learning portal; corrections are applied directly through reimport.
 Parent setup is for course locations/imports, transcript administration and local
 settings. No lesson review queue, publication approval or required practical-work
 grading belongs in that interface. All correct knowledge checks complete a
@@ -71,7 +71,7 @@ Change 3 — Clarify Windows file access
 
 ```
 + Course and project files must be accessible through ordinary
-+ Windows directories, including files Jaxon needs to open in
++ Windows directories, including files the learner needs to open in
 + Unreal Engine. Docker must not become the exclusive location
 + of editable Unreal projects.
 ```
@@ -122,7 +122,7 @@ The primary measure of success is demonstrated Unreal Engine proficiency, not vi
 
 ## Student and learning objectives
 
-The primary student is Jaxon, age 10, who is interested in learning Unreal Engine 5 and eventually developing his own games, particularly horror games.
+The primary audience is young learners interested in Unreal Engine 5 and creating their own games.
 
 The platform should be engaging, age-appropriate, visually polished, and inspired by video-game progression systems without becoming distracting.
 
@@ -179,7 +179,7 @@ The application must not require Jellyfin.
 
 Videos and course resources must remain outside the Git repository and Docker image by default. GitHub is for application source, deployment definitions, documentation, and non-sensitive configuration templates—not large copyrighted course files, personal data, secrets, or the live progress database.
 
-Course and project files must be accessible through ordinary Windows directories, including files Jaxon needs to open in Unreal Engine. Docker must not become the exclusive location of editable Unreal projects.
+Course and project files must be accessible through ordinary Windows directories, including files the learner needs to open in Unreal Engine. Docker must not become the exclusive location of editable Unreal projects.
 
 Support browser-compatible video playback, resume positions, captions, playback-speed adjustment, and accessible resource downloads. Detect incompatible codecs and provide a documented conversion process without destroying originals.
 

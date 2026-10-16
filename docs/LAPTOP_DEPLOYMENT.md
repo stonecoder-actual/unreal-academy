@@ -1,9 +1,9 @@
-# Put Unreal Academy on Jaxon's Windows laptop
+# Put Unreal Academy on the learner's Windows laptop
 
 Use these steps when you are ready to deploy. They do not install anything on
-Jaxon's laptop remotely. App changes must first be committed and pushed to
+the learner's laptop remotely. App changes must first be committed and pushed to
 `https://github.com/stonecoder-actual/unreal-academy` on branch `main`; files only
-edited on Sam's computer will not reach the laptop.
+edited on the developer's computer will not reach the laptop.
 
 ## 1. Requirements and downloads
 
@@ -15,7 +15,7 @@ edited on Sam's computer will not reach the laptop.
 | Git for Windows | [Official Git download](https://git-scm.com/install/windows). Enable Git on PATH and reopen PowerShell after installation. |
 | Windows PowerShell 5.1+ | Included with Windows. No Python, Node.js, npm or FFmpeg installation is needed on the laptop; those run in Docker. |
 | Storage | The script requires 10 GB free for build/update headroom, **plus** enough room for videos, projects, retained releases and backups. Course libraries can be much larger. |
-| Repository access and internet | Use the Windows account Jaxon will actually use. Give its Git credential manager read access to the private repository. Do not put a token/password in the URL or script. Internet is needed for install/updates and Udemy; local learning remains usable offline. |
+| Repository access and internet | Use the Windows account the learner will actually use. Give its Git credential manager read access to the private repository. Do not put a token/password in the URL or script. Internet is needed for install/updates and Udemy; local learning remains usable offline. |
 
 Turn on Docker Desktop's **Start Docker Desktop when you sign in** setting.
 Keep the laptop account signed in for its background update task. The script
@@ -28,7 +28,7 @@ Keep these ordinary Windows directories outside OneDrive and Git:
 
 ```text
 C:\UnrealAcademy\Courses\   purchased folders/videos/captions/resources
-C:\UnrealAcademy\Projects\  Jaxon's editable Unreal projects
+C:\UnrealAcademy\Projects\  the learner's editable Unreal projects
 ```
 
 Preserve the course top-level folder names and MP4/SRT relationships. Do not
@@ -36,8 +36,8 @@ clone or copy the source repository into the Courses directory. Copying a whole
 course is a file operation, not a Git operation. Video files are not bundled in
 the application and local video courses must exist on the laptop.
 
-To bring over the current lesson notes/catalogue and Jaxon's progress, make a
-consistent database snapshot on Sam's computer after deploying the current code:
+To bring over the current lesson notes/catalogue and the learner's progress, make a
+consistent database snapshot on the developer's computer after deploying the current code:
 
 ```powershell
 docker compose exec -T backend python -m app.maintenance backup
@@ -59,7 +59,7 @@ checks, so a snapshot made before that publication will not contain the batch.
 
 ## 3. Install (one command after cloning)
 
-Open ordinary PowerShell **as the same Windows user Jaxon will use**. First clone
+Open ordinary PowerShell **as the same Windows user the learner will use**. First clone
 and sign in through Git's normal credential prompt if requested:
 
 ```powershell
@@ -143,7 +143,7 @@ without restoring old data. A task already switching is allowed to finish if the
 laptop changes to battery power.
 
 All successful updates keep `Data\academy.sqlite3`, the library and settings
-outside Git/images. They never copy Sam's development database onto an existing
+outside Git/images. They never copy the developer's development database onto an existing
 laptop installation, delete volumes, reset XP or import test learner records.
 
 ## 5. Everyday commands
@@ -152,7 +152,7 @@ laptop installation, delete volumes, reset XP or import test learner records.
 # Check installed commit, containers and scheduled updater.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action Status
 
-# Update now (choose a time Jaxon is not learning).
+# Update now (choose a time the learner is not learning).
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action Update
 
 # Make a consistent private database backup without stopping learning.
@@ -179,7 +179,7 @@ while logged out. Sleeping/battery-only use can delay automatic updates.
 
 Git delivers application code, schema migrations, deployment scripts and docs.
 Purchased transcripts and authored lesson JSON/database rows are intentionally
-excluded. **New lesson notes authored on Sam's computer will not appear automatically
+excluded. **New lesson notes authored on the developer's computer will not appear automatically
 on the laptop through this updater.** They need a separate private transfer and
 guide reimport against retained IDs; a safe content-only sync is a later milestone.
 Do not solve this by uploading purchased curriculum or overwriting the laptop DB.
@@ -221,7 +221,7 @@ DATA_DIR as a troubleshooting shortcut, or restore an old backup over new progre
 
 The deployment workflow has an isolated integration check in
 `tests/verify-laptop-update.ps1`. It creates its own local Git origin, loopback
-port, Docker project and synthetic data; it never pushes to GitHub or uses Jaxon's
+port, Docker project and synthetic data; it never pushes to GitHub or uses the learner's
 database. Actual laptop setup remains a separate acceptance step.
 
 Rechecked for the laptop README update on 16 October 2026: the full isolated

@@ -1,6 +1,6 @@
 # Direct mission publication — 16 October 2026
 
-Sam requested removing parental lesson approval and keeping Parent setup focused
+The project owner requested removing parental lesson approval and keeping Parent setup focused
 on library configuration and essential administration. This overrides the old
 approval requirements in earlier design and milestone verification documents.
 

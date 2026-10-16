@@ -1,4 +1,4 @@
-# Real Git + Docker integration, isolated from Jaxon's data. No external Git push.
+# Real Git + Docker integration, isolated from the learner's data. No external Git push.
 # Run from a checkout with Docker Desktop available. Fixtures are retained for inspection.
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path

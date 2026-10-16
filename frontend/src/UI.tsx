@@ -20,7 +20,7 @@ export function Icon({name, size=20}:{name:IconName;size?:number}) {
 }
 
 export function Avatar({large=false}:{large?:boolean}) {
-  return <div className={`avatar ${large?'avatar-large':''}`} aria-label="Jaxon's academy emblem">
+  return <div className={`avatar ${large?'avatar-large':''}`} aria-label="Academy emblem">
     <svg viewBox="0 0 80 80" aria-hidden="true"><path d="m40 7 28 16v34L40 73 12 57V23Z" fill="#202037" stroke="#b9a2ff" strokeWidth="2"/>
       <path d="m40 20 17 10v20L40 60 23 50V30Z" fill="#a68aff"/><path d="M23 30 40 40l17-10M40 40v20" fill="none" stroke="#272139" strokeWidth="2"/>
       <path d="m31 30 9-5 9 5-9 5Z" fill="#e9e1ff"/></svg>

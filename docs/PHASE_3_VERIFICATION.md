@@ -32,7 +32,7 @@ draft attached to video 4. It has not been published for the student.
   catalogue remains present; main XP is zero and guide status is draft.
 - Isolated snapshot site on `127.0.0.1:3002` used the read-only course files and
   a separate database under `data/phase3-verification/`. No test awards or fake
-  practical submissions were written to Jaxon's database.
+  practical submissions were written to the learner's database.
 - Browser: parent preview and test-copy publication; guided route opens video 4;
   wrong answer gives no XP; correct retry gives 10; repeated answer gives zero;
   a section button seeks to 1:59; saved progress and quiz state survive refresh.
@@ -48,7 +48,7 @@ draft attached to video 4. It has not been published for the student.
 ## Remaining parent action and limitations
 
 Review the actual draft, answer key, UE5 caveats and practical rubric under
-Parent setup. Approve lesson for Jaxon publishes it and enables Start guided
+Parent setup. Approve lesson for the learner publishes it and enables Start guided
 lesson on the course card. This follows the project's parent-approval requirement
 for generated curriculum. The full implementation and draft are reviewable now.
 
@@ -56,7 +56,7 @@ The practical exercise is authored guidance grounded in the subtitles. It has
 not been carried out in Unreal Engine during these website tests. Browser test
 evidence and approvals were explicitly labeled automated test data; they are
 not claims of demonstrated Unreal proficiency. The parent must observe the real
-project or local screenshots before awarding Jaxon's practical XP.
+project or local screenshots before awarding the learner's practical XP.
 
 Screenshot uploads, automatic Unreal project grading, accounts, mastery-based
 unlocking, and a published-curriculum revision editor remain future work. Parent
