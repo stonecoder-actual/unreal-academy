@@ -1,54 +1,65 @@
-# Mission authoring and direct publication
+# Lesson takeaways and knowledge checks
 
-Current policy: 16 October 2026. Sam removed publication approval and parent
-grading from the learning flow. Parent setup manages course libraries, imports,
-captured transcripts and local settings. Review queues, answer-key previews and
-approval forms have been removed. Earlier verification notes describe history.
+Current policy: 16 October 2026. This supersedes the previous guided-mission and
+optional-practice format. The filename is retained so existing links still work.
 
-Work one lesson at a time until Sam asks to expand the curriculum. Use the actual
-transcript, with age-appropriate explanations, useful scenario questions, plausible
-distractors, hints and immediate feedback. Label adaptations honestly. Do not
-invent technical skills for an administrative video. For new Udemy missions,
-group multiple-choice questions at the end. No required written/oral explanation.
+## The entire learner flow
 
-## Publish or correct a mission
+1. Watch the lesson on Udemy and follow its instructor's UE5 activities.
+2. Return to the portal and read the highlighted key takeaways.
+3. Answer 3–6 multiple-choice knowledge checks at the end.
 
-Keep purchased transcripts and authored JSON under Git-ignored `data/`. Run:
+No mission framing, invented projects, extra exercises, reflection tasks,
+written explanation questions, parent grading or approval queue. Do not add
+show-and-tell as another portal step. Udemy supplies the practical work.
+
+## Author each video from its transcript
+
+Read the complete captured transcript before writing. Pick the concepts Jaxon
+needs to understand, using short, clear bullets. Do not pad notes with every
+mouse click or turn administrative content into an Unreal technical lesson.
+Use 3 questions for a light/orientation video; 4–6 for more substantial material.
+Ask about the central ideas using plausible choices, predictions or simple
+troubleshooting. Avoid trivia, ambiguous answers, and unsupported claims.
+Give each question a helpful hint and immediate explanation. All questions go
+after the takeaways; every answer is automatically checked.
+
+`takeaways` is a non-empty list in the private lesson JSON. Keep `practice: null`.
+The import validator enforces 3–6 questions and no activities for Udemy lessons.
+Legacy document/section fields and `/guide` API names remain for compatibility;
+they do not create additional learner steps. Historical local-course documents
+remain readable, and historical practice records/earned XP are retained.
+
+## Publish and correct
+
+Keep purchased transcripts and authored JSON in Git-ignored `data/udemy/`.
+Development checkout:
 
 ```powershell
-docker compose exec -T backend python -m app.guided /data/path-to-guide.json
+docker compose exec -T backend python -m app.guided /data/udemy/lesson5-notes.json
 ```
 
-Import validates the source, structure and timestamps and publishes immediately.
-Refresh Jaxon's portal to see it. Existing drafts are released on backend startup;
-their previous records are archived first. Importing a correction updates the
-same guide and immediately replaces the student-facing content. No approval step.
+Managed laptop installation:
 
-Keep the lesson ID and existing question IDs for corrections. New IDs mean new
-questions. Earned XP and attempts are retained; changing a question's reward
-does not grant previously earned XP again. Removed checks no longer count toward
-the current mission, but their historical XP stays saved. Identical reimports
-do not create another backup. Previous documents and source hashes are archived
-under `data/backups/guides/` before changes. These private snapshots supplement
-regular full database backups; they are not a one-click rollback facility.
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action ImportGuide -GuideFile C:\UnrealAcademy\Transfer\lesson5-notes.json
+```
 
-Source hashes still bind guides to local media/subtitles or captured external
-transcripts. If those change, answers are blocked until the mission is checked,
-corrected and reimported against the new source. No parent publication gate.
+Imports publish directly. Keep lesson IDs and existing question IDs for corrections.
+The prior document is archived under `data/backups/guides/`; prior answers and XP
+stay saved. Removed checks no longer count toward the current quiz, but their
+earned XP is not deleted. Source changes block outdated notes until checked and
+reimported. Never replace Jaxon's live database to deliver a new lesson.
 
-## Completion and XP
+First correct answers earn XP once; wrong answers, retries after success and
+watching earn zero. Levels advance every 100 XP. No practical-work rewards are
+created by the current portal. Application updates use Git; lesson content is
+transferred privately, as Sam chose.
 
-Every mission completes when all its current checks have been answered correctly.
-Watching, wrong answers and repeat correct answers earn zero XP. First correct
-answers earn the authored amount exactly once, including across restarts and
-corrections. Levels advance every 100 XP. A level is a progress marker.
+## Current coverage
 
-Use `practice: null` for quiz-only lessons. An authored practice object provides
-optional steps, criteria and troubleshooting. The portal has no submission or
-approval forms and awards no new practical-work XP. Jaxon can show progress to
-Sam whenever he likes. Do not claim an unassessed activity proves mastery.
-
-Historical submissions and earned practice XP remain stored. Deprecated API
-routes are retained for compatibility with that historical workflow; they are
-not used by the current portal. No schema migration or learner-data reset is
-needed for this change.
+The existing Udemy lessons are 3 (three checks), 5 (six checks) and 6 (six checks).
+Their private files are `lesson3-notes.json`, `lesson5-notes.json` and
+`lesson6-notes.json`. The remaining video lessons are not yet authored; they show
+a clear pending-notes message while remaining watchable. Work with Sam on the
+rest of the curriculum after this format update.

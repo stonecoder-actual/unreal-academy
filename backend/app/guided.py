@@ -55,6 +55,7 @@ class GuideDocument(BaseModel):
     sections: list[Section] = Field(min_length=1, max_length=30)
     questions: list[Question] = Field(min_length=1, max_length=100)
     practice: Practice | None = None
+    takeaways: list[str] = Field(default_factory=list, max_length=10)
 
 
 def source(db, lesson_id, root):
@@ -89,6 +90,14 @@ def import_guide(database, root, document):
     with connect(database) as db:
         db.execute('BEGIN IMMEDIATE')
         video_hash, subtitle_hash, duration = source(db, parsed.lesson_id, root)
+        course = db.execute('SELECT c.source_type FROM courses c JOIN lessons l ON l.course_id=c.id WHERE l.id=?', (parsed.lesson_id,)).fetchone()
+        if course['source_type'] == 'udemy':
+            if not 3 <= len(parsed.questions) <= 6:
+                raise ValueError('Udemy lessons require 3–6 knowledge check questions')
+            if parsed.practice is not None:
+                raise ValueError('Udemy provides the activities; portal lessons must have practice: null')
+            if not parsed.takeaways or any(not note.strip() for note in parsed.takeaways):
+                raise ValueError('Udemy lessons require non-empty transcript-based key takeaways')
         if any((s.start is None) != (s.end is None) or
                (s.start is not None and (s.end <= s.start or (duration and s.end > duration + 1)))
                for s in parsed.sections):

@@ -198,7 +198,7 @@ def create_library_router(database: Path, root: Path):
                 COALESCE(SUM(p.watched),0) AS watched_count,
                 SUM(CASE WHEN p.position > 0 OR p.watched=1 THEN 1 ELSE 0 END) AS started_count FROM courses c
                 LEFT JOIN lessons l ON l.course_id=c.id AND l.available=1
-                LEFT JOIN lesson_progress p ON p.lesson_id=l.id GROUP BY c.id ORDER BY c.title''')]
+                LEFT JOIN lesson_progress p ON p.lesson_id=l.id GROUP BY c.id ORDER BY CASE WHEN c.folder='udemy:ue5-ultimate-bp-course' THEN 0 WHEN c.source_type='udemy' THEN 1 ELSE 2 END,c.title''')]
 
     @router.get('/courses/{course_id}')
     def course_detail(course_id: str):

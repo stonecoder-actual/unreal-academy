@@ -1,7 +1,7 @@
 # Unreal Academy
 
-Phase 3 adds guided missions, automatic knowledge checks, optional practical
-activities, persistent XP and levels to the local course player. Parent setup
+The learning portal combines course videos with transcript-based key takeaways,
+automatic knowledge checks, persistent XP and levels. Parent setup
 handles video libraries, course imports, transcripts and local settings.
 
 For the phased inventory, read [current project status](docs/PROJECT_STATUS.md).
@@ -11,30 +11,29 @@ That managed installation keeps data outside Git and verifies progress before
 opening an updated release. The direct Compose commands below remain the
 development workflow; use the managed script for the laptop installation.
 
-## Guided missions
+## Lesson takeaways and questions
 
-Authored missions publish straight to Jaxon's portal. There is no approval queue.
-Existing drafts become available on backend startup. Open a course or the
-dashboard's guided mission to learn; lessons without a mission remain watchable.
+The Blueprints Udemy course is first on the homepage and is Jaxon's starting
+course. For each authored video lesson, he follows the instructor on Udemy, reads
+the key takeaways here, then answers 3–6 automatically checked questions. The
+number depends on the lesson's complexity. Udemy supplies the UE5 activities;
+the portal does not add guided missions, projects or written explanations.
 
-All correct knowledge checks complete a mission automatically. First correct
-answers earn the authored XP once; wrong answers, repeats and watching earn zero.
-Levels advance every 100 XP. Practical steps and showing progress to a parent
-are optional, with no written submission, grading wait or new practice XP.
-Previously earned XP, submissions and playback progress remain saved.
+First correct answers earn XP once; wrong answers, repeated successes and
+watching earn zero. All correct checks finish the lesson quiz, with no parent
+grading or approval. Existing progress and earned XP remain saved.
 
-Purchased transcripts and authored JSON stay in private, Git-ignored `data/`.
-Publish a mission or apply a correction with:
+Three Udemy lessons currently have authored notes: lesson 3 (three checks),
+lesson 5 (six checks) and lesson 6 (six checks). The remaining videos remain
+watchable while their notes/questions are prepared. Captured transcripts do not
+mean the full curriculum has already been authored.
 
-```powershell
-docker compose exec -T backend python -m app.guided /data/path-to-guide.json
-```
-
-Import validates and publishes immediately. Reimport updates the existing guide;
-keep question IDs stable for corrections so earned XP is not awarded again.
-Previous documents are archived under `data/backups/guides/`. Source changes
-block outdated guides until they are checked and reimported. Refresh the portal
-after importing. See [mission authoring](docs/MISSION_AUTHORING.md).
+Private transcripts and lesson JSON stay in Git-ignored `data/`. Imports publish
+directly; keep existing question IDs when correcting content to preserve rewards.
+Previous documents are archived locally. See
+[lesson authoring](docs/MISSION_AUTHORING.md) for the development and laptop
+import commands. Git delivers application updates; private lesson content is
+transferred separately without replacing the laptop database.
 
 Schema migration 3 first saves a consistent `data/backups/pre-v3-*.sqlite3`
 snapshot. It retains existing courses/playback and adds guided documents, quiz
@@ -142,8 +141,8 @@ the lesson or hiding the page. Power loss or an abrupt browser close can lose
 the last checkpoint. Reaching the end marks the lesson watched; you can also
 use **I watched this lesson** or undo that state to start it again from the
 beginning. Watching does not establish
-mastery: practice the technique in Unreal Engine. Published guided lessons include
-automatically checked quizzes and optional practical work; other videos remain available
+mastery: practice the technique in Unreal Engine. Authored lesson notes include
+key takeaways and automatic knowledge checks; other videos remain available
 without invented quizzes. Progress is for one local student.
 
 ## Video compatibility and conversion

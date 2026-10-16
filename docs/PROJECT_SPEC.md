@@ -1,3 +1,20 @@
+## Current learning format — 16 October 2026
+
+Sam simplified Udemy learning: review each video's actual transcript, highlight
+the key takeaways Jaxon needs to understand, and provide 3–6 automatically
+checked multiple-choice questions, depending on the video's complexity. Place
+all questions after the takeaways. No guided missions, generated activities,
+projects, reflection prompts, written explanations or parent grading. Udemy's
+instructor supplies the practical activities; Jaxon follows along in UE5.
+Put the purchased Blueprints Udemy course first on the homepage and feature it
+as his starting course. Keep saved answers, progress and once-only XP.
+
+This replaces earlier mission/optional-activity plans. The three already-authored
+Udemy lessons are being converted now; authoring the remaining video curriculum
+is the next step with Sam. Captured transcripts are source material, not finished
+lessons. Continue publishing lesson notes directly, with private manual content
+transfer and automatic Git application updates as already agreed.
+
 ## Current product policy — 16 October 2026
 
 Sam removed the parent lesson-approval workflow. New missions publish directly

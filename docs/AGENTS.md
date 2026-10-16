@@ -18,7 +18,7 @@ Read docs/PROJECT_SPEC.md before implementing features.
 
 ## Current milestone
 Phase 4: Windows laptop deployment and controlled Git updates preserving progress.
-The Phase 3 guided-mission pilot is accepted; full curriculum authoring remains ongoing.
+Current learning task: simplify Udemy to transcript-based key takeaways and 3–6 automatically checked questions per video; finish the remaining curriculum with Sam next.
 
 ## Required stack
 - React and TypeScript
@@ -39,10 +39,12 @@ The Phase 3 guided-mission pilot is accepted; full curriculum authoring remains 
 - Playback position and watched state persist across restarts.
 - Existing Phase 1 data is backed up before schema migration.
 - Correct knowledge checks earn XP once; retries, duplicate requests and restarts cannot farm awards.
-- Publish authored missions directly to Jaxon; no parent publication approval or review queue.
+- Publish lesson takeaways/checks directly; no guided missions, generated activities, written explanations or parent grading.
+- Each new Udemy video lesson needs key takeaways and 3–6 multiple-choice checks based on its complete transcript.
+- Udemy handles all practical work; do not create separate portal activities. Put the Blueprints Udemy course first.
 - Parent setup covers course libraries, imports, transcripts and essential administration.
 - Corrections preserve guide/question identities and earned XP; archive previous documents locally.
-- All correct knowledge checks complete a mission automatically; practice/show-and-tell never blocks progress.
+- All correct knowledge checks complete the lesson quiz automatically; preserve existing question IDs and once-only rewards.
 - Watching and quiz understanding are separate; do not imply optional practice has been assessed.
 - Purchased transcripts and derived course-specific curriculum stay in Git-ignored local data.
 - Authentication and live AI integration remain future work.

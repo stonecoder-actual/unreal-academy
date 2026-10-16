@@ -38,6 +38,7 @@ try {
     # Copy only Git-visible application inputs; never data, course files or .env.
     $files = & git -C $repo ls-files -co --exclude-standard backend frontend scripts compose.yaml
     foreach ($file in $files) {
+        if (-not (Test-Path -LiteralPath (Join-Path $repo $file) -PathType Leaf)) { continue }
         $target = Join-Path $seed $file
         New-Item -ItemType Directory -Force (Split-Path $target) | Out-Null
         Copy-Item -LiteralPath (Join-Path $repo $file) -Destination $target
@@ -52,6 +53,8 @@ try {
     $script:CourseId = (Invoke-RestMethod "$origin/api/parent/external-courses/import" -Method Post -ContentType application/json -Body ($manifest|ConvertTo-Json -Depth 8)).course_id
     $lessonId = (Invoke-RestMethod "$origin/api/courses/$script:CourseId").lessons[0].id
     $guide = @{lesson_id=$lessonId;title='Synthetic mission';overview='Deployment fixture only.';prerequisites=@();objectives=@('Test persistence');corrections=@();references=@();practice=$null;sections=@(@{id='test';title='Test';start=$null;end=$null;objective='Test';notes=@();pause_prompt='Think'});questions=@(@{id='check';section='test';prompt='Which synthetic answer is correct?';options=@('Correct','Incorrect');correct=0;explanation='Synthetic explanation';hint='Synthetic hint';xp=5})}
+    $guide['takeaways']=@('Understand this synthetic transcript idea.')
+    $guide.questions += @(1,2 | ForEach-Object { @{id="check-$_";section='test';prompt='Which synthetic answer is correct?';options=@('Correct','Incorrect');correct=0;explanation='Synthetic explanation';hint='Synthetic hint';xp=5} })
     $guide | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $install 'Data\fixture-guide.json') -Encoding UTF8
     Native $powershell @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $repo 'scripts\Academy.ps1'),'-Action','ImportGuide','-Root',$install,'-GuideFile',(Join-Path $install 'Data\fixture-guide.json'))
     $guideId = (Invoke-RestMethod "$origin/api/guided-lessons")[0].id

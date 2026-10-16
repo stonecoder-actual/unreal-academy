@@ -67,18 +67,18 @@ def test_external_guides_rewards_and_source_change(tmp_path):
     with TestClient(create_app(database,root)) as client:
         cid=client.post('/api/parent/external-courses/import',json=manifest()).json()['course_id']
         lesson_id=client.get('/api/courses/'+cid).json()['lessons'][0]['id']
-        document={'lesson_id':lesson_id,'title':'Synthetic mission','overview':'Synthetic test only.',
+        document={'lesson_id':lesson_id,'title':'Synthetic lesson notes','overview':'Synthetic test only.',
+                  'takeaways':['Understand the idea in this synthetic transcript.'],
                   'prerequisites':[],'objectives':['Explain.'],'corrections':[],'references':[],
                   'sections':[{'id':'test','title':'Discuss','start':None,'end':None,'objective':'Explain',
                                'notes':['A test note.'],'pause_prompt':'Why?'}],
                   'questions':[{'id':'test','section':'test','prompt':'Which synthetic answer is correct?',
                                 'options':['Correct','Incorrect'],'correct':0,'explanation':'Test explanation.',
                                 'hint':'Test hint.','xp':10}],
-                  'practice':{'title':'Synthetic build','estimated_minutes':5,'steps':['Show it.'],
-                              'criteria':['Explain it.'],'troubleshooting':[],'xp':60}}
+                  'practice':None}
+        document['questions'] += [{**document['questions'][0], 'id':f'other-{index}'} for index in range(2)]
         gid=import_guide(database,root,document)
         assert client.get(f'/api/lessons/{lesson_id}/guide').json()['status']=='published'
-        assert client.post(f'/api/parent/guides/{gid}/publish').status_code==200
         answer=f'/api/guides/{gid}/questions/test/answer'
         assert client.post(answer,json={'answer':'Incorrect'}).json()['awarded_xp']==0
         assert client.post(answer,json={'answer':'Correct'}).json()['awarded_xp']==10
@@ -87,12 +87,9 @@ def test_external_guides_rewards_and_source_change(tmp_path):
         assert 'correct' not in student['document']['questions'][0]
         evidence={'prediction':'SYNTHETIC TEST ONLY prediction.','observation':'SYNTHETIC TEST ONLY observation.',
                   'explanation':'SYNTHETIC TEST ONLY explanation.'}
-        sid=client.post(f'/api/guides/{gid}/practice',json=evidence).json()['id']
-        review=f'/api/parent/submissions/{sid}/review'
-        assert client.post(review,json={'decision':'approved','feedback':'Synthetic review only.'}).json()['awarded_xp']==60
-        assert client.post(review,json={'decision':'approved','feedback':'Repeated synthetic review.'}).json()['awarded_xp']==0
+        assert client.post(f'/api/guides/{gid}/practice',json=evidence).status_code==409
     with TestClient(create_app(database,root)) as client:
-        assert client.get('/api/xp').json()['total_xp']==70
+        assert client.get('/api/xp').json()['total_xp']==10
         assert client.get(f'/api/lessons/{lesson_id}/guide').json()['solved']==['test']
         changed=manifest();changed['lessons'][0]['transcript']['cues']=['Changed transcript requires review.']
         client.post('/api/parent/external-courses/import',json=changed)
@@ -101,7 +98,69 @@ def test_external_guides_rewards_and_source_change(tmp_path):
         assert import_guide(database,root,document)==gid
         assert client.get(f'/api/lessons/{lesson_id}/guide').status_code==200
         assert client.post(answer,json={'answer':'Correct'}).json()['awarded_xp']==0
-        assert client.get('/api/xp').json()['total_xp']==70
+        assert client.get('/api/xp').json()['total_xp']==10
+
+
+@pytest.mark.parametrize('question_count,with_activity,takeaways,accepted', [
+    (3,False,['A key idea from the transcript.'],True),
+    (6,False,['A key idea from the transcript.'],True),
+    (2,False,['A key idea from the transcript.'],False),
+    (7,False,['A key idea from the transcript.'],False),
+    (3,True,['A key idea from the transcript.'],False),
+    (3,False,[],False),
+    (3,False,['   '],False),
+])
+def test_udemy_notes_require_takeaways_three_to_six_checks_and_no_activities(tmp_path,question_count,with_activity,takeaways,accepted):
+    database=tmp_path/'academy.sqlite3';root=tmp_path/'courses'
+    with TestClient(create_app(database,root)) as client:
+        cid=client.post('/api/parent/external-courses/import',json=manifest()).json()['course_id']
+        lesson_id=client.get('/api/courses/'+cid).json()['lessons'][0]['id']
+        document={'lesson_id':lesson_id,'title':'Lesson notes','overview':'Synthetic transcript only.',
+                  'prerequisites':[],'objectives':[],'corrections':[],'references':[],
+                  'takeaways':takeaways,
+                  'sections':[{'id':'notes','title':'Key takeaways','objective':'Understand','notes':[], 'pause_prompt':''}],
+                  'questions':[{'id':f'check-{i}','section':'notes','prompt':'Which answer matches this idea?',
+                                'options':['Correct','Incorrect'],'correct':0,'explanation':'A reason.', 'hint':'Think.', 'xp':5}
+                               for i in range(question_count)],
+                  'practice':{'title':'Do not create this activity','estimated_minutes':5,'steps':['Build'],
+                              'criteria':['Explain'],'troubleshooting':[],'xp':60} if with_activity else None}
+        if not accepted:
+            with pytest.raises(ValueError):
+                import_guide(database,root,document)
+            assert client.get(f'/api/lessons/{lesson_id}/guide').json() is None
+            return
+        gid=import_guide(database,root,document)
+        for index in range(question_count):
+            answer=f'/api/guides/{gid}/questions/check-{index}/answer'
+            assert client.post(answer,json={'answer':'Correct'}).json()['awarded_xp']==5
+        doc=client.get(f'/api/lessons/{lesson_id}/guide').json()
+        assert doc['completed'] and doc['document']['takeaways']==takeaways
+        assert doc['document']['practice'] is None
+        assert len(doc['document']['questions'])==question_count
+        # Correcting takeaways/questions never awards existing checks again.
+        document['takeaways']=['Corrected transcript-based takeaway.']
+        document['questions']=document['questions'][:3]
+        assert import_guide(database,root,document)==gid
+        assert client.get('/api/xp').json()['total_xp']==question_count*5
+        assert client.post(f'/api/guides/{gid}/questions/check-0/answer',json={'answer':'Correct'}).json()['awarded_xp']==0
+
+
+def test_udemy_course_is_first_before_alphabetically_earlier_local_courses(tmp_path):
+    database=tmp_path/'academy.sqlite3'
+    with TestClient(create_app(database)) as client:
+        with sqlite3.connect(database) as db:
+            db.execute("INSERT INTO courses(id,folder,title) VALUES('local','Local','AAA local course')")
+        payload=manifest()
+        client.post('/api/parent/external-courses/import',json=payload)
+        preferred=manifest()
+        preferred.update(slug='ue5-ultimate-bp-course',title='ZZZ preferred Udemy',url='https://www.udemy.com/course/ue5-ultimate-bp-course/')
+        for lesson in preferred['lessons']:
+            lesson['url']=lesson['url'].replace('/test-blueprints/', '/ue5-ultimate-bp-course/')
+        assert client.post('/api/parent/external-courses/import',json=preferred).status_code==200
+        courses=client.get('/api/courses').json()
+        assert courses[0]['folder']=='udemy:ue5-ultimate-bp-course'
+        assert courses[1]['source_type']=='udemy'
+        assert courses[2]['id']=='local'
 
 
 def test_external_rejects_duplicate_and_blank_transcripts(tmp_path):

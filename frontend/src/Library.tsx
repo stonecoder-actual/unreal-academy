@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { request } from './api';
-import { GuidedLesson } from './Guided';
+import { LessonNotes } from './LessonNotes';
 import { CourseArt, Difficulty, Icon, Meter, coursePresentation } from './UI';
 import { Evidence } from './Progress';
 
@@ -70,12 +70,12 @@ function Player({ lesson, resources, onProgress, checkpoint, index, total, onNex
     <div className="lesson-heading"><p className="eyebrow">LESSON {index} OF {total}</p><span className={`pill ${lesson.watched?'watched-pill':''}`}><Icon name={lesson.watched?'check':'play'} size={14}/>{lesson.watched?lesson.external_url?'COMPLETED HERE':'VIDEO WATCHED':'WATCH & EXPLORE'}</span></div><h2 id="lesson-title" tabIndex={-1}>{lesson.title}</h2>
     {lesson.external_url ? <div className="external-lesson">
       <p className="eyebrow">{lesson.item_kind==='video'?'WATCH ON UDEMY':lesson.item_kind==='quiz'?'UDEMY COURSE QUIZ':'UDEMY READING & RESOURCES'}</p>
-      <h3>Your lesson opens in a new tab.</h3><p>Keep Unreal Academy open. When you return, record your progress and explore any published checks or practical challenge below.</p>
+      <h3>Your lesson opens in a new tab.</h3><p>Keep Unreal Academy open. When you return, follow the instructor’s activities in Unreal Engine, then review the key takeaways and answer the questions below.</p>
       <a className="button-link" href={lesson.external_url} target="_blank" rel="noopener noreferrer">{lesson.item_kind==='video'?'Watch on Udemy':'Open on Udemy'} <Icon name="arrow"/></a>
       <p className="muted">Udemy needs an internet connection and your signed-in purchased course. Playback and Udemy completion do not sync here.</p>
       <button className="secondary" onClick={()=>save(0,!lesson.watched)}>{lesson.watched?'Undo completed state':lesson.item_kind==='video'?'I watched this lesson':'I completed this item on Udemy'}</button>
-      <p>{lesson.transcript_status==='captured'?'Transcript captured for personalized mission preparation.':lesson.item_kind==='video'?'Transcript preparation is pending. You can still watch this lesson on Udemy.':'This item is a reading or Udemy quiz; it has no video transcript.'}</p>
-      <p>Opening the link or marking it complete earns no XP. Knowledge checks earn XP automatically; practical activities are optional.</p>
+      {lesson.item_kind!=='video'&&<p>Complete this reading or quiz on Udemy.</p>}
+      <p>Opening the link or marking it complete earns no XP. Correct knowledge checks earn XP once. Follow Udemy for the practical work.</p>
     </div> : !lesson.available ? <p role="alert">This video is missing. Ask your parent to restore its file and rescan the course.</p>
       : !lesson.playable ? <p role="alert">This video needs a format check or conversion before it can play. Ask your parent to follow the video conversion instructions in the README.</p>
       : <>
@@ -111,14 +111,12 @@ function Player({ lesson, resources, onProgress, checkpoint, index, total, onNex
         <p>{lesson.caption_path ? 'Use the captions button in the player for subtitles.' : 'This lesson has no matching subtitles.'}</p>
       </>}
     {error && <p role="alert">{error}</p>}<p role="status">{feedback}</p>
-    <p className="muted">Watching is the first step. Practice what you learn in Unreal Engine; watched does not mean mastered.</p>
+    {!lesson.external_url&&<p className="muted">Watching is the first step. Practice what you learn in Unreal Engine; watched does not mean mastered.</p>}
     <details className="resource-drawer"><summary>Lesson resources <span className="count-badge">{resources.length}</span></summary>
     {resources.length ? <ul>{resources.map(resource => <li key={resource.id}>
       <a href={`/api/resources/${resource.id}/download`}>{resource.relative_path}</a>
     </li>)}</ul> : <p>{lesson.external_url?'Find any lesson resources in Udemy’s Resources menu.':'No extra files are needed from this lesson\'s resource list.'}</p>}</details>
-    <GuidedLesson lessonId={lesson.id} externalUrl={lesson.external_url??undefined} showPending={!!lesson.external_url} onSeek={seconds=>{
-      if(video.current){video.current.pause();video.current.currentTime=seconds;video.current.scrollIntoView({behavior:'smooth',block:'center'});}
-    }}/>
+    <LessonNotes lessonId={lesson.id} showPending={!!lesson.external_url&&lesson.item_kind==='video'}/>
     {onNext&&<div className="next-lesson"><div><p className="eyebrow">WHEN YOU'RE READY</p><p>Take your time. Your progress is saved here.</p></div><button className="secondary" onClick={onNext}>{lesson.external_url?'Next lesson':'Next video'}<Icon name="arrow"/></button></div>}
   </section>;
 }
@@ -136,26 +134,18 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
   const [search,setSearch]=useState('');
   const [filter,setFilter]=useState('All courses');
   const [lessonSearch,setLessonSearch]=useState('');
-  const [mission,setMission]=useState<{title:string;solved:number;total:number;requiresPractice:boolean;reflection:boolean;lessonId:string;courseId:string}|null>(null);
   const [progressRevision,setProgressRevision]=useState(0);
   useEffect(()=>{const refresh=()=>setProgressRevision(n=>n+1);window.addEventListener('academy-xp',refresh);return()=>window.removeEventListener('academy-xp',refresh);},[]);
   useEffect(() => {
     let active = true;
-    request('/api/guided-lessons').then(async result=>{
-      if(!active)return;setGuides(result);
-      const candidates=await Promise.all(result.map(async (g:{lesson_id:string;course_id:string})=>{
-        const detail=await request(`/api/lessons/${g.lesson_id}/guide`);
-        return detail?{title:detail.document.title,solved:detail.solved.length,total:detail.document.questions.length,requiresPractice:!!detail.document.practice,reflection:detail.document.practice?.kind==='reflection',lessonId:g.lesson_id,courseId:g.course_id}:null;
-      }));
-      if(active)setMission(candidates.find(m=>m&&m.solved<m.total)??candidates.find(Boolean)??null);
-    }).catch(e=>{if(active)setError(e.message);});
+    request('/api/guided-lessons').then(result=>{if(active)setGuides(result);}).catch(e=>{if(active)setError(e.message);});
     request('/api/courses').then(result => { if (active) { setCourses(result); setError(''); } })
       .catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [revision,progressRevision]);
   useEffect(()=>{if(course){document.getElementById('course-title-heading')?.focus();window.scrollTo({top:0});}},[course?.id]);
   useEffect(()=>{if(lessonId)document.getElementById('lesson-title')?.focus();},[lessonId]);
-  async function openCourse(id: string, guidedLessonId?:string) {
+  async function openCourse(id: string) {
     const generation = ++selection.current;
     if (course && lessonId) remembered.current[course.id] = lessonId;
     setLoading(true); setError('');
@@ -171,7 +161,7 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
       const continuing = active.filter(l => !l.watched && l.position > 0)
         .sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''))[0];
       const rememberedId = result.lessons.find(l=>l.id === remembered.current[id])?.id;
-      setLessonId(guidedLessonId ?? rememberedId ?? (continuing ?? active.find(l => !l.watched) ?? active[0] ?? result.lessons[0])?.id ?? null);
+      setLessonId(rememberedId ?? (continuing ?? active.find(l => !l.watched) ?? active[0] ?? result.lessons[0])?.id ?? null);
     } catch (e) { if (generation === selection.current) setError((e as Error).message); }
     finally { if (generation === selection.current) setLoading(false); }
   }
@@ -179,7 +169,7 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
     setCourse(current => current ? { ...current, lessons: current.lessons.map(l => l.id === id ? { ...l, position, watched } : l) } : null);
   }
   const lesson = course?.lessons.find(l => l.id === lessonId);
-  const missionComplete=!!mission&&mission.solved===mission.total;
+  const featured=courses.find(c=>c.source_type==='udemy')??courses[0];
   const visibleCourses=courses.filter(c=>c.title.toLowerCase().includes(search.toLowerCase()) && (filter==='All courses'||(c.difficulty??coursePresentation(c.folder).difficulty)===filter));
   async function closeCourse(){
     ++selection.current;
@@ -198,10 +188,10 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
     {!course ? <>
       <header className="page-heading"><p className="eyebrow">{home?'YOUR NEXT GREAT IDEA STARTS HERE':'EXPLORE. LEARN. CREATE.'}</p><h1>{home?'Welcome back, Jaxon.':'Your course library.'}</h1><p>{home?(welcome||'A little curiosity. A new skill. A world of possibilities.'):'Choose your next adventure in game development.'}</p></header>
       {home&&<>
-        <section className="mission-hero"><div className="mission-copy"><span className="pill"><Icon name="spark" size={16}/>{missionComplete?'MISSION COMPLETED':mission?'YOUR NEXT MISSION':'YOUR CREATIVE WORKSPACE'}</span>
-          <h2>{mission?mission.title.replace(/^Mission:\s*/,''):'Big worlds start with small ideas.'}</h2>
-          <p>{missionComplete?'Your quiz is complete. Keep learning, try an optional activity, or share your progress whenever you like.':mission?'Watch the lesson, review the ideas, then answer the automatically checked questions.':'Pick a course below and take your next step toward building your own games.'}</p>
-          {mission&&<><div className="mission-meta"><span><Icon name="check" size={16}/>{mission.solved} of {mission.total} checks solved</span><span><Icon name={mission.requiresPractice?'cube':'check'} size={16}/>{mission.requiresPractice?'Optional activity':'Automatic quiz & XP'}</span></div><button disabled={loading} onClick={()=>openCourse(mission.courseId,mission.lessonId)}>{missionComplete?'Revisit mission':mission.solved?'Continue mission':'Open guided mission'}<Icon name="arrow"/></button></>}
+        <section className="mission-hero"><div className="mission-copy"><span className="pill"><Icon name="play" size={16}/>{featured?.source_type==='udemy'?'START HERE · UDEMY':'YOUR NEXT LESSON'}</span>
+          <h2>{featured?.title??'Your next step in Unreal Engine'}</h2>
+          <p>Watch the lesson and follow along with the instructor in Unreal Engine. Come back here for key takeaways and a short knowledge check.</p>
+          {featured&&<button disabled={loading} onClick={()=>openCourse(featured.id)}>{featured.source_type==='udemy'?featured.started_count?'Continue Udemy course':'Start Udemy course':featured.started_count?'Continue learning':'Start learning'}<Icon name="arrow"/></button>}
         </div><CourseArt hero/></section>
         <Evidence/>
       </>}
@@ -225,14 +215,14 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
           <h3 id={`course-${item.id}`}>{item.title}</h3>
           <div className="course-card-details">
             <p className="course-count"><Icon name="play" size={14}/>{item.lesson_count} {item.source_type==='udemy'?'curriculum items · online':'video lessons'}</p>
-            <p className="course-guidance">{guided ? 'Includes a guided mission' : 'Learn at your own pace'}</p>
+            <p className="course-guidance">{guided?'Key takeaways & knowledge checks':item.source_type==='udemy'?'Follow the instructor on Udemy':'Learn at your own pace'}</p>
             <div className="course-watch-progress">
               <p>{item.watched_count} of {item.lesson_count} {item.source_type==='udemy'?'items completed':'videos watched'}</p>
               <progress max={Math.max(1, item.lesson_count)} value={item.watched_count}
                 aria-label={`${item.source_type==='udemy'?'Items completed':'Videos watched'} in ${item.title}`}/>
             </div>
           </div>
-          <button disabled={loading} onClick={() => openCourse(item.id, item.started_count ? undefined : guided?.lesson_id)}>
+          <button disabled={loading} onClick={() => openCourse(item.id)}>
             {item.started_count ? 'Continue learning' : 'Start learning'}<Icon name="arrow" size={18}/>
           </button></div>
         </article>;
