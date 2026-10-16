@@ -160,7 +160,7 @@ def test_migration_backup_preserves_phase_one(tmp_path):
         assert db.execute('PRAGMA user_version').fetchone()[0] == 1
         assert db.execute('SELECT value FROM settings').fetchone()[0] == 'Existing welcome'
     with sqlite3.connect(database) as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 4
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 5
     with TestClient(create_app(database, tmp_path / 'courses')):
         pass
-    assert len(list((tmp_path / 'backups').glob('*'))) == 3
+    assert len(list((tmp_path / 'backups').glob('*'))) == 4

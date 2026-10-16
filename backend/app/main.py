@@ -8,6 +8,7 @@ from .database import connect, initialize
 from .library import create_library_router
 from .guided import create_guided_router, publish_existing_guides
 from .external import create_external_router
+from .progression import create_progression_router
 
 
 def create_app(database_path: Path | None = None, courses_root: Path | None = None):
@@ -23,6 +24,7 @@ def create_app(database_path: Path | None = None, courses_root: Path | None = No
     app.include_router(create_library_router(path, courses_root or Path(os.getenv('COURSES_ROOT', '/courses'))))
     app.include_router(create_guided_router(path, courses_root or Path(os.getenv('COURSES_ROOT', '/courses'))))
     app.include_router(create_external_router(path))
+    app.include_router(create_progression_router(path, courses_root or Path(os.getenv('COURSES_ROOT', '/courses'))))
 
     @app.get('/api/health')
     def health():

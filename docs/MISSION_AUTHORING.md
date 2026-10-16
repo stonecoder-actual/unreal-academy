@@ -52,7 +52,8 @@ earned XP is not deleted. Source changes block outdated notes until checked and
 reimported. Never replace the learner's live database to deliver a new lesson.
 
 First correct answers earn XP once; wrong answers, retries after success and
-watching earn zero. Levels advance every 100 XP. No practical-work rewards are
+watching earn zero. Levels use the Developer Guild curve in `PROGRESSION.md`,
+with permanent rank and emblem unlocks. No practical-work rewards are
 created by the current portal. Application updates use Git; lesson content is
 transferred privately, as the project owner chose.
 

@@ -30,6 +30,9 @@ function Commit([string]$Message) {
 }
 function Assert-Saved {
     Assert ((Invoke-RestMethod "$origin/api/xp").total_xp -eq 5) 'Earned XP changed'
+    $guild = Invoke-RestMethod "$origin/api/progression"
+    Assert ($guild.highest_rank.id -eq 'newbie') 'Earned rank changed'
+    Assert ($guild.equipment.title_id -eq 'newbie' -and $guild.equipment.icon_id -eq 'newbie') 'Equipped title/emblem changed'
     Assert ((Invoke-RestMethod "$origin/api/settings").welcome_message -eq 'Deployment test sentinel') 'Setting changed'
     $lesson = (Invoke-RestMethod "$origin/api/courses/$script:CourseId").lessons[0]
     Assert ($lesson.watched -eq 1 -and $lesson.position -eq 18) 'Playback progress changed'
@@ -59,6 +62,7 @@ try {
     Native $powershell @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $repo 'scripts\Academy.ps1'),'-Action','ImportGuide','-Root',$install,'-GuideFile',(Join-Path $install 'Data\fixture-guide.json'))
     $guideId = (Invoke-RestMethod "$origin/api/guided-lessons")[0].id
     Invoke-RestMethod "$origin/api/guides/$guideId/questions/check/answer" -Method Post -ContentType application/json -Body '{"answer":"Correct"}' | Out-Null
+    Invoke-RestMethod "$origin/api/progression/equipment" -Method Put -ContentType application/json -Body '{"title_id":"newbie","icon_id":"newbie"}' | Out-Null
     Invoke-RestMethod "$origin/api/lessons/$lessonId/progress" -Method Put -ContentType application/json -Body '{"position":18,"watched":true}' | Out-Null
     Invoke-RestMethod "$origin/api/settings" -Method Put -ContentType application/json -Body '{"welcome_message":"Deployment test sentinel"}' | Out-Null
     $before = Get-Content (Join-Path $install 'current.json') -Raw | ConvertFrom-Json

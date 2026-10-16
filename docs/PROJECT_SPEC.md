@@ -1,3 +1,13 @@
+## Approved progression — 16 October 2026
+
+Use the Developer Guild progression in `PROGRESSION.md`: 50 levels, ten permanent
+titles and original emblems, independent cosmetic equipment and milestone reveals.
+Level 2 starts at 50 XP and Level 50 at 28,320 XP. Unreal Master additionally needs
+85% of the full track's checks overall and 75% in each course, after all planned
+guides are authored and track membership is finalized. Pending lessons count in
+draft estimates; published content alone must not make mastery easy. Preserve
+existing XP and permanently earned rewards. No new practical assignments or grading.
+
 ## Current learning format — 16 October 2026
 
 The project owner simplified Udemy learning: review each video's actual transcript, highlight

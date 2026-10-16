@@ -4,8 +4,8 @@ import './style.css';
 import { request } from './api';
 import { Library, ParentImport } from './Library';
 import { ParentExternalImport } from './ExternalImport';
-import { XPPanel, Profile } from './Progress';
-import { Avatar, Icon } from './UI';
+import { XPPanel, Profile, ProgressionProvider, LearnerIdentity, ParentMasterySetup } from './Progress';
+import { Icon } from './UI';
 import { DesignPreview, ResponsivePreview } from './DesignPreview';
 
 function App() {
@@ -42,6 +42,7 @@ function App() {
     finally { setSaving(false); }
   }
   function navigate(next:typeof view){setView(next);setNavigationKey(n=>n+1);window.scrollTo({top:0});}
+  function imported(){setRevision(value=>value+1);window.dispatchEvent(new Event('academy-xp'));}
   return <div className="app-shell">
     <a className="skip-link" href="#main-content">Skip to learning</a>
     <aside className="app-sidebar">
@@ -52,14 +53,15 @@ function App() {
         <button className={view==='courses'?'active':''} aria-current={view==='courses'?'page':undefined} onClick={()=>navigate('courses')}><Icon name="library"/>Course library</button>
         <button className={view==='profile'?'active':''} aria-current={view==='profile'?'page':undefined} onClick={()=>navigate('profile')}><Icon name="flag"/>My progress</button>
       </nav>
-      <div className="sidebar-bottom"><XPPanel compact/><button className={`parent-link ${view==='parent'?'active':''}`} aria-current={view==='parent'?'page':undefined} onClick={()=>navigate('parent')}><Icon name="parent"/>Parent setup</button><div className="sidebar-profile"><Avatar/><div><strong>Learner</strong><span>Game developer in the making</span></div></div></div>
+      <div className="sidebar-bottom"><XPPanel compact/><button className={`parent-link ${view==='parent'?'active':''}`} aria-current={view==='parent'?'page':undefined} onClick={()=>navigate('parent')}><Icon name="parent"/>Parent setup</button><div className="sidebar-profile"><LearnerIdentity/></div></div>
     </aside>
     <div className="workspace"><header className="topbar"><span><span className="status-dot"/>Your academy · On this computer</span><span className="development-tag">IN DEVELOPMENT</span></header>
     <main id="main-content" tabIndex={-1}>
     {view==='profile'?<Profile/>:view !== 'parent' ? <Library key={`${view}-${navigationKey}`} revision={revision} home={view==='learn'} welcome={message}/> : <div className="parent-page">
     <header className="page-heading"><p className="eyebrow">PARENT WORKSPACE</p><h1>Academy setup.</h1><p>Connect the video library, manage course imports, and adjust local settings. Lesson takeaways and checks appear directly in the learning portal.</p></header>
-    <ParentImport onImported={() => setRevision(value => value + 1)}/>
-    <ParentExternalImport onImported={() => setRevision(value => value + 1)}/>
+    <ParentImport onImported={imported}/>
+    <ParentExternalImport onImported={imported}/>
+    <ParentMasterySetup/>
     <section aria-labelledby="foundation"><h2 id="foundation">Development status</h2>
       <p role="status">{status}</p>
       <p>Lessons include key takeaways and automatic knowledge checks. Udemy provides the practical activities. Accounts and AI services remain future work.</p>
@@ -75,4 +77,4 @@ function App() {
 }
 
 const previewParams=new URLSearchParams(location.search);
-createRoot(document.getElementById('root')!).render(import.meta.env.DEV && previewParams.has('design-preview') ? <DesignPreview/> : import.meta.env.DEV && previewParams.has('responsive-preview') ? <ResponsivePreview size={previewParams.get('responsive-preview')??'phone'}/> : <App/>);
+createRoot(document.getElementById('root')!).render(<ProgressionProvider>{import.meta.env.DEV && previewParams.has('design-preview') ? <DesignPreview/> : import.meta.env.DEV && previewParams.has('responsive-preview') ? <ResponsivePreview size={previewParams.get('responsive-preview')??'phone'}/> : <App/>}</ProgressionProvider>);

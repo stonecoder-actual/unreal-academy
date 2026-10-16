@@ -127,6 +127,14 @@ Import publishes directly and preserves earned XP; it does not replace the
 database. Udemy provides practical activities. Portal checks award XP once per
 correct question; watching and repeated successes award none.
 
+## Levels and rewards
+
+Developer Guild has 50 levels and ten permanent title/emblem unlocks, from
+Newbie to Unreal Master. Level 2 needs 50 XP; Level 50 needs 28,320 XP. Equip
+earned titles and emblems in **My progress**. Master also requires 85% of track
+checks overall and 75% in each course after the complete track is finalized.
+Existing XP is retained. See [progression rules](docs/PROGRESSION.md).
+
 ## Development
 
 For a development checkout only; laptop installations use the managed script.

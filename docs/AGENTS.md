@@ -3,6 +3,7 @@
 Read docs/PROJECT_SPEC.md before implementing features.
 
 ## Development rules
+- Progression uses the Developer Guild curve in docs/PROGRESSION.md. Preserve XP, permanent unlocks and equipped cosmetics through migrations and Git updates. Mastery includes the whole planned curriculum, never only published quizzes.
 - Keep personal names out of tracked files and future commit identities; use generic learner/developer labels.
 - Work on one implementation milestone at a time.
 - Do not implement unrelated future features.

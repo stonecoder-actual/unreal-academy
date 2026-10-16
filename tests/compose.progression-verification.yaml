@@ -1,0 +1,9 @@
+# Separate synthetic learner, loopback port and Compose project. No real data.
+services:
+  backend:
+    volumes: !override
+      - ./data/progression-verification:/data
+      - ./data/progression-verification/courses:/courses:ro
+  frontend:
+    ports: !override
+      - "127.0.0.1:3007:80"

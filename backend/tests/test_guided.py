@@ -196,14 +196,23 @@ def test_source_change_blocks_until_direct_reimport(guided):
         assert client.get(f"/api/lessons/{document['lesson_id']}/guide").status_code == 200
 
 
+def test_mastery_cannot_finalize_when_local_caption_changes(guided):
+    database, root, _, _ = guided
+    with TestClient(create_app(database, root)) as client:
+        assert client.get('/api/progression').json()['mastery']['authored_videos'] == 1
+        (root / 'Test course' / 'Lesson.srt').write_text('Changed source')
+        assert client.get('/api/progression').json()['mastery']['authored_videos'] == 0
+        assert client.post('/api/parent/progression/finalize').status_code == 409
+
+
 def test_migration_preserves_phase_two_and_level_boundary(guided):
     database, root, _, guide_id = guided
     with sqlite3.connect(database) as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 4
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 5
         db.execute('INSERT INTO xp_transactions(award_key,guide_id,amount,reason) VALUES(?,?,?,?)', ('test-boundary',guide_id,100,'Test boundary'))
     with TestClient(create_app(database, root)) as client:
         summary = client.get('/api/xp').json()
-        assert summary['level'] == 2 and summary['level_xp'] == 0 and summary['xp_to_next_level'] == 100
+        assert summary['level'] == 2 and summary['level_xp'] == 50 and summary['xp_to_next_level'] == 20
         assert len(client.get('/api/courses').json()) == 1
     backup = next((database.parent / 'backups').glob('pre-v3-*.sqlite3'))
     with sqlite3.connect(backup) as db:

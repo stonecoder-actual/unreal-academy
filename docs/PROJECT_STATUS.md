@@ -30,6 +30,11 @@ parent approval requirements. the project owner is satisfied with the lesson des
 | Learner interface | Accepted | Consistent course cards/difficulty labels, dashboard, student workspace and real progress; parent area handles administration. No redesign needed before deployment. |
 | Phase 4: laptop deployment | Source published and locally tested; actual laptop rollout pending | Windows setup, requirement checks/download links, Git-based release updates, local data backups, persistence checks and recovery. App source through e1bdea3 is on main. Verify installation/credentials/scheduled execution on the learner's laptop; private curriculum transfers separately. |
 
+Developer Guild progression is implemented: 50 levels, ten permanent titles and
+emblems, independent equipment and rank reveals. The complete-curriculum mastery
+track remains a draft until remaining courses are imported and their checks are
+authored. See `PROGRESSION.md`; existing XP/progress remain intact.
+
 ## Immediate remaining work
 
 1. Application/deployment source through e1bdea3 has been pushed to the existing
@@ -57,7 +62,7 @@ parent approval requirements. the project owner is satisfied with the lesson des
   transfers for now; use the deployment script's ImportGuide action.
 - Durable off-device backup/restore tooling and a tested disaster-recovery drill.
   Deployment snapshots on the same drive are not protection from drive loss.
-- Optional richer achievements/cosmetics; current XP is a progress marker.
+- Additional achievements beyond the implemented Developer Guild ranks/emblems.
 - Accounts/authentication, shared-network hosting and multi-user operation.
 - Optional AI-assisted authoring; no live AI tutor or runtime AI dependency.
 - Release hardening: protected release branch, dependency/security automation,
@@ -67,7 +72,7 @@ parent approval requirements. the project owner is satisfied with the lesson des
 ## Current data and boundaries
 
 The development app uses Git-ignored `data/academy.sqlite3` and a read-only
-`C:\UnrealAcademy\Courses` mount. Schema version is 4. On the deployment-managed
+`C:\UnrealAcademy\Courses` mount. Schema version is 5. On the deployment-managed
 laptop these become `C:\UnrealAcademy\Data` and the configured course directory,
 outside the Git checkout and release images. The student remains one local learner
 profile; Parent setup is navigation, not an authenticated boundary.

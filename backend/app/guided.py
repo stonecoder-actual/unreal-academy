@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .database import connect, initialize
 from .library import safe_path
+from .progression import xp_summary, progression
 
 
 class Question(BaseModel):
@@ -134,14 +135,6 @@ def publish_existing_guides(database):
             db.execute("UPDATE guided_lessons SET status='published' WHERE status='draft'")
 
 
-def xp_summary(db):
-    total = db.execute('SELECT COALESCE(SUM(amount),0) FROM xp_transactions').fetchone()[0]
-    step = int(db.execute("SELECT value FROM settings WHERE key='xp_per_level'").fetchone()[0])
-    level = total // step + 1
-    return {'total_xp': total, 'level': level, 'level_xp': total % step,
-            'xp_per_level': step, 'xp_to_next_level': step - total % step}
-
-
 class Answer(BaseModel):
     model_config = ConfigDict(extra='forbid')
     answer: str = Field(max_length=1500)
@@ -211,6 +204,8 @@ def create_guided_router(database, root):
                 inserted = db.execute('INSERT OR IGNORE INTO xp_transactions(award_key,guide_id,amount,reason) VALUES(?,?,?,?)',
                     (f'question:{guide_id}:{question_id}', guide_id, question['xp'], f"Knowledge check: {question_id}"))
                 awarded = question['xp'] if inserted.rowcount else 0
+                if awarded:
+                    progression(db, root)
             return {'correct': correct, 'awarded_xp': awarded, 'explanation': question['explanation'], 'xp': xp_summary(db)}
 
     @router.post('/guides/{guide_id}/practice', deprecated=True)
@@ -273,6 +268,8 @@ def create_guided_router(database, root):
                 inserted = db.execute('INSERT OR IGNORE INTO xp_transactions(award_key,guide_id,amount,reason) VALUES(?,?,?,?)',
                     (f"practice:{submission['guide_id']}", submission['guide_id'], doc['practice']['xp'], 'Parent-approved practice'))
                 awarded = doc['practice']['xp'] if inserted.rowcount else 0
+                if awarded:
+                    progression(db, root)
             return {'status':payload.decision, 'awarded_xp':awarded, 'xp':xp_summary(db)}
 
     return router

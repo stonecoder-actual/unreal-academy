@@ -26,7 +26,7 @@ def test_newer_schema_rejected(tmp_path):
     import pytest
     path = tmp_path / 'new.sqlite3'
     with sqlite3.connect(path) as db:
-        db.execute('PRAGMA user_version = 5')
+        db.execute('PRAGMA user_version = 6')
     with pytest.raises(RuntimeError, match='newer'):
         with TestClient(create_app(path)):
             pass

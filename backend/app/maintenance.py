@@ -11,7 +11,8 @@ from contextlib import closing, contextmanager
 
 # Only learner/identity records: guide publication can legitimately change at startup.
 TABLES = ('settings', 'courses', 'lessons', 'lesson_progress', 'quiz_attempts',
-          'xp_transactions', 'practice_submissions')
+          'xp_transactions', 'practice_submissions', 'progression_unlocks',
+          'progression_equipment', 'mastery_plan', 'mastery_state')
 
 
 @contextmanager
