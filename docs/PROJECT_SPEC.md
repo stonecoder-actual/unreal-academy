@@ -1,3 +1,17 @@
+## Current product policy — 16 October 2026
+
+Sam removed the parent lesson-approval workflow. New missions publish directly
+to Jaxon's learning portal; corrections are applied directly through reimport.
+Parent setup is for course locations/imports, transcript administration and local
+settings. No lesson review queue, publication approval or required practical-work
+grading belongs in that interface. All correct knowledge checks complete a
+mission automatically and award XP once; practice/show-and-tell is optional.
+Preserve existing identities, progress, earned XP and historical work. Keep
+question IDs stable when correcting an existing check, and archive the previous
+guide locally before replacing it. Source changes still require a corrected,
+reimported guide; this is a content-integrity check, not a parent approval step.
+This policy supersedes the approval/review workflow in the original vision below.
+
 ## 1. Summary of Changes
 
 I reviewed the Unreal Academy prompt for contradictions, ambiguous requirements, deployment risks, and instructions that could cause Codex to produce an incomplete application.

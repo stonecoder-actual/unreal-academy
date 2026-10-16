@@ -37,13 +37,99 @@ def publish(client, guide_id):
     assert client.post(f'/api/parent/guides/{guide_id}/publish').status_code == 200
 
 
-def test_draft_review_answers_rewards_and_restart(guided):
+def test_reflection_kind_and_small_rewards(guided):
+    database, root, document, guide_id = guided
+    document = copy.deepcopy(document)
+    document['practice'].update(kind='reflection', xp=15)
+    document['questions'][0]['xp'] = 5
+    assert import_guide(database, root, document) == guide_id
+    with TestClient(create_app(database, root)) as client:
+        assert client.get('/api/parent/guides').json()[0]['document']['practice']['kind'] == 'reflection'
+        assert client.get(f"/api/lessons/{document['lesson_id']}/guide").json()['status'] == 'published'
+        assert client.get('/api/xp').json()['total_xp'] == 0
+        publish(client, guide_id)
+        answer = f'/api/guides/{guide_id}/questions/test-question/answer'
+        assert client.post(answer, json={'answer':'A wrong answer'}).json()['awarded_xp'] == 0
+        assert client.post(answer, json={'answer':'A valid answer'}).json()['awarded_xp'] == 5
+        assert client.post(answer, json={'answer':'A valid answer'}).json()['awarded_xp'] == 0
+        evidence = {'prediction':'SYNTHETIC: choose a small learning goal.',
+                    'observation':'SYNTHETIC: discuss a plan with a parent.',
+                    'explanation':'SYNTHETIC: explain a useful improvement.'}
+        result = client.post(f'/api/guides/{guide_id}/practice', json=evidence).json()
+        assert result['awarded_xp'] == 0
+        review = f"/api/parent/submissions/{result['id']}/review"
+        assert client.post(review, json={'decision':'approved','feedback':'Synthetic reflection reviewed.'}).json()['awarded_xp'] == 15
+        assert client.post(review, json={'decision':'approved','feedback':'Repeated synthetic review.'}).json()['awarded_xp'] == 0
+    with TestClient(create_app(database, root)) as client:
+        guide = client.get(f"/api/lessons/{document['lesson_id']}/guide").json()
+        assert guide['document']['practice']['kind'] == 'reflection'
+        assert guide['xp']['total_xp'] == 20
+
+
+def test_legacy_published_guide_can_be_reimported_unchanged(guided):
+    database, root, document, guide_id = guided
+    with TestClient(create_app(database, root)) as client:
+        publish(client, guide_id)
+    # Published documents from before activity kinds had no kind field.
+    with sqlite3.connect(database) as db:
+        stored = json.loads(db.execute('SELECT document FROM guided_lessons WHERE id=?', (guide_id,)).fetchone()[0])
+        stored['practice'].pop('kind', None)
+        legacy_json = json.dumps(stored)
+        db.execute('UPDATE guided_lessons SET document=? WHERE id=?', (legacy_json, guide_id))
+    assert import_guide(database, root, document) == guide_id
+    with sqlite3.connect(database) as db:
+        assert db.execute('SELECT document FROM guided_lessons WHERE id=?', (guide_id,)).fetchone()[0] == legacy_json
+    document['practice']['kind'] = 'reflection'
+    assert import_guide(database, root, document) == guide_id
+
+
+def test_unknown_activity_kind_rejected(guided):
+    database, root, document, _ = guided
+    document['practice']['kind'] = 'automatic-public-post'
+    with pytest.raises(ValueError):
+        import_guide(database, root, document)
+
+
+def test_quiz_only_mission_completes_without_parent_or_written_work(guided):
+    database, root, document, guide_id = guided
+    document = copy.deepcopy(document)
+    document['practice'] = None
+    document['questions'] = [{**document['questions'][0], 'id':f'quiz-{index}', 'xp':5} for index in range(3)]
+    assert import_guide(database, root, document) == guide_id
+    url = f"/api/lessons/{document['lesson_id']}/guide"
+    with TestClient(create_app(database, root)) as client:
+        assert client.get(url).json()['status'] == 'published'
+        publish(client, guide_id)
+        assert client.get(url).json()['completed'] is False
+        assert client.get(url).json()['document']['practice'] is None
+        for index in range(3):
+            answer = f'/api/guides/{guide_id}/questions/quiz-{index}/answer'
+            assert client.post(answer,json={'answer':'A wrong answer'}).json()['awarded_xp'] == 0
+            assert client.get(url).json()['completed'] is False
+            assert client.post(answer,json={'answer':'A valid answer'}).json()['awarded_xp'] == 5
+            assert client.post(answer,json={'answer':'A valid answer'}).json()['awarded_xp'] == 0
+            assert client.get(url).json()['completed'] is (index == 2)
+        evidence = {'prediction':'Synthetic unused written response.',
+                    'observation':'Synthetic unused written response.',
+                    'explanation':'Synthetic unused written response.'}
+        assert client.post(f'/api/guides/{guide_id}/practice',json=evidence).status_code == 409
+        assert client.get('/api/parent/submissions').json() == []
+        assert client.get('/api/xp').json()['total_xp'] == 15
+    with TestClient(create_app(database, root)) as client:
+        guide = client.get(url).json()
+        assert guide['completed'] is True
+        assert guide['submission'] is None
+        assert len(guide['solved']) == 3
+        assert client.get('/api/xp').json()['total_xp'] == 15
+        assert client.post(f'/api/guides/{guide_id}/questions/quiz-0/answer',json={'answer':'A valid answer'}).json()['awarded_xp'] == 0
+
+
+def test_direct_publication_answers_rewards_and_restart(guided):
     database, root, document, guide_id = guided
     answer_url = f'/api/guides/{guide_id}/questions/test-question/answer'
     with TestClient(create_app(database, root)) as client:
-        assert client.get(f"/api/lessons/{document['lesson_id']}/guide").json() is None
-        assert client.post(answer_url,json={'answer':'A valid answer'}).status_code == 404
-        assert client.get('/api/parent/guides').json()[0]['status'] == 'draft'
+        assert client.get(f"/api/lessons/{document['lesson_id']}/guide").json()['status'] == 'published'
+        assert client.get('/api/parent/guides').json()[0]['status'] == 'published'
         client.put(f"/api/lessons/{document['lesson_id']}/progress", json={'position':2,'watched':True})
         assert client.get('/api/xp').json()['total_xp'] == 0
         publish(client, guide_id)
@@ -94,25 +180,26 @@ def test_practice_feedback_and_idempotent_approval(guided):
         assert client.get(f"/api/lessons/{document['lesson_id']}/guide").json()['submission']['status'] == 'approved'
 
 
-def test_source_change_and_immutable_published_content(guided):
+def test_source_change_blocks_until_direct_reimport(guided):
     database, root, document, guide_id = guided
     with TestClient(create_app(database, root)) as client:
         publish(client, guide_id)
         changed = copy.deepcopy(document)
         changed['questions'][0]['xp'] = 90
-        with pytest.raises(ValueError,match='immutable'):
-            import_guide(database, root, changed)
+        assert import_guide(database, root, changed) == guide_id
         (root / 'Test course' / 'Lesson.srt').write_text('Changed subtitles')
         assert client.get(f"/api/lessons/{document['lesson_id']}/guide").status_code == 409
         assert client.post(f'/api/guides/{guide_id}/questions/test-question/answer',json={'answer':'A valid answer'}).status_code == 409
         assert client.get('/api/parent/guides').json()[0]['source_error']
         assert client.get('/api/xp').json()['total_xp'] == 0
+        assert import_guide(database, root, changed) == guide_id
+        assert client.get(f"/api/lessons/{document['lesson_id']}/guide").status_code == 200
 
 
 def test_migration_preserves_phase_two_and_level_boundary(guided):
     database, root, _, guide_id = guided
     with sqlite3.connect(database) as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 3
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 4
         db.execute('INSERT INTO xp_transactions(award_key,guide_id,amount,reason) VALUES(?,?,?,?)', ('test-boundary',guide_id,100,'Test boundary'))
     with TestClient(create_app(database, root)) as client:
         summary = client.get('/api/xp').json()
@@ -139,3 +226,46 @@ def test_real_phase_two_progress_survives_upgrade(tmp_path):
     backup = next((tmp_path/'backups').glob('pre-v3-*.sqlite3'))
     with sqlite3.connect(backup) as db:
         assert db.execute("SELECT position FROM lesson_progress WHERE lesson_id='lesson'").fetchone()[0]==42
+
+
+def test_corrections_preserve_progress_rewards_and_document_history(guided):
+    database, root, document, guide_id = guided
+    url = f"/api/lessons/{document['lesson_id']}/guide"
+    answer = f'/api/guides/{guide_id}/questions/test-question/answer'
+    with TestClient(create_app(database, root)) as client:
+        client.put(f"/api/lessons/{document['lesson_id']}/progress", json={'position':2,'watched':True})
+        assert client.post(answer,json={'answer':'A valid answer'}).json()['awarded_xp'] == 10
+        # Even a guide with a practical task completes without a submission.
+        assert client.get(url).json()['completed'] is True
+        document['title'] = 'Corrected mission'
+        document['questions'][0]['xp'] = 90
+        assert import_guide(database,root,document) == guide_id
+        assert client.get(url).json()['document']['title'] == 'Corrected mission'
+        assert client.get(url).json()['solved'] == ['test-question']
+        assert client.post(answer,json={'answer':'A valid answer'}).json()['awarded_xp'] == 0
+        assert client.get('/api/xp').json()['total_xp'] == 10
+        snapshots = list((database.parent/'backups'/'guides').glob('*.json'))
+        archived = json.loads(snapshots[0].read_text())
+        assert archived['id'] == guide_id
+        assert json.loads(archived['document'])['title'] == 'Test mission'
+        # Removing a check never erases its XP or counts it as a different check.
+        document['questions'][0]['id'] = 'new-question'
+        import_guide(database,root,document)
+        assert client.get(url).json()['solved'] == []
+        assert client.get(url).json()['completed'] is False
+    with TestClient(create_app(database,root)) as client:
+        assert client.get('/api/xp').json()['total_xp'] == 10
+        course = client.get('/api/courses').json()[0]['id']
+        lesson = client.get('/api/courses/'+course).json()['lessons'][0]
+        assert lesson['position'] == 2 and lesson['watched'] == 1
+
+
+def test_startup_releases_legacy_drafts_once_without_awarding_xp(guided):
+    database, root, document, guide_id = guided
+    with sqlite3.connect(database) as db:
+        db.execute("UPDATE guided_lessons SET status='draft' WHERE id=?", (guide_id,))
+    for _ in range(2):
+        with TestClient(create_app(database,root)) as client:
+            assert client.get(f"/api/lessons/{document['lesson_id']}/guide").json()['status'] == 'published'
+            assert client.get('/api/xp').json()['total_xp'] == 0
+    assert len(list((database.parent/'backups'/'guides').glob('pre-direct-publication-*.json'))) == 1

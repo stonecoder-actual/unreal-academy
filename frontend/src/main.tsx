@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import './style.css';
 import { request } from './api';
 import { Library, ParentImport } from './Library';
-import { ParentGuidedLessons } from './Guided';
+import { ParentExternalImport } from './ExternalImport';
 import { XPPanel, Profile } from './Progress';
 import { Avatar, Icon } from './UI';
 import { DesignPreview, ResponsivePreview } from './DesignPreview';
@@ -57,12 +57,12 @@ function App() {
     <div className="workspace"><header className="topbar"><span><span className="status-dot"/>Your academy · On this computer</span><span className="development-tag">IN DEVELOPMENT</span></header>
     <main id="main-content" tabIndex={-1}>
     {view==='profile'?<Profile/>:view !== 'parent' ? <Library key={`${view}-${navigationKey}`} revision={revision} home={view==='learn'} welcome={message}/> : <div className="parent-page">
-    <header className="page-heading"><p className="eyebrow">PARENT WORKSPACE</p><h1>Help great ideas grow.</h1><p>Review lessons, encourage experiments, and celebrate learning.</p></header>
-    <ParentGuidedLessons/>
+    <header className="page-heading"><p className="eyebrow">PARENT WORKSPACE</p><h1>Set up Jaxon’s academy.</h1><p>Connect the video library, manage course imports, and adjust local settings. Missions appear directly in Jaxon’s learning portal.</p></header>
     <ParentImport onImported={() => setRevision(value => value + 1)}/>
+    <ParentExternalImport onImported={() => setRevision(value => value + 1)}/>
     <section aria-labelledby="foundation"><h2 id="foundation">Development status</h2>
       <p role="status">{status}</p>
-      <p>Guided lessons, knowledge checks, parent-reviewed practice and XP are available. Accounts and AI services remain future work.</p>
+      <p>Guided missions publish directly. Knowledge checks award XP automatically; practical activities are optional. Accounts and AI services remain future work.</p>
     </section>
     <section aria-labelledby="local"><h2 id="local">Make it yours</h2>
       <p>Set a welcome message. It stays here when the app restarts.</p>

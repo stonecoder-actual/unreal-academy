@@ -17,7 +17,7 @@ Read docs/PROJECT_SPEC.md before implementing features.
 - Do not publish or distribute purchased curriculum.
 
 ## Current milestone
-Phase 3: Guided lessons, knowledge checks, parent-reviewed practice and XP.
+Phase 3: Directly published guided missions, independent knowledge checks, optional practice and XP.
 
 ## Required stack
 - React and TypeScript
@@ -38,7 +38,10 @@ Phase 3: Guided lessons, knowledge checks, parent-reviewed practice and XP.
 - Playback position and watched state persist across restarts.
 - Existing Phase 1 data is backed up before schema migration.
 - Correct knowledge checks earn XP once; retries, duplicate requests and restarts cannot farm awards.
-- Generated lessons require parent review and approval before student publication.
-- Watched, quiz understanding and demonstrated practice remain separate states.
+- Publish authored missions directly to Jaxon; no parent publication approval or review queue.
+- Parent setup covers course libraries, imports, transcripts and essential administration.
+- Corrections preserve guide/question identities and earned XP; archive previous documents locally.
+- All correct knowledge checks complete a mission automatically; practice/show-and-tell never blocks progress.
+- Watching and quiz understanding are separate; do not imply optional practice has been assessed.
 - Purchased transcripts and derived course-specific curriculum stay in Git-ignored local data.
 - Authentication and live AI integration remain future work.

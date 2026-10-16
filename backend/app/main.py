@@ -6,7 +6,8 @@ from fastapi import FastAPI
 from pydantic import BaseModel, Field
 from .database import connect, initialize
 from .library import create_library_router
-from .guided import create_guided_router
+from .guided import create_guided_router, publish_existing_guides
+from .external import create_external_router
 
 
 def create_app(database_path: Path | None = None, courses_root: Path | None = None):
@@ -15,11 +16,13 @@ def create_app(database_path: Path | None = None, courses_root: Path | None = No
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         initialize(path)
+        publish_existing_guides(path)
         yield
 
     app = FastAPI(title='Unreal Academy', lifespan=lifespan)
     app.include_router(create_library_router(path, courses_root or Path(os.getenv('COURSES_ROOT', '/courses'))))
     app.include_router(create_guided_router(path, courses_root or Path(os.getenv('COURSES_ROOT', '/courses'))))
+    app.include_router(create_external_router(path))
 
     @app.get('/api/health')
     def health():

@@ -20,7 +20,7 @@ def initialize(path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
     with connect(path) as db:
         version = db.execute('PRAGMA user_version').fetchone()[0]
-        if version > 3:
+        if version > 4:
             raise RuntimeError('Database schema is newer than this application')
         if version == 0:
             db.executescript(Path(__file__).with_name('schema.sql').read_text())
@@ -47,3 +47,14 @@ def initialize(path: Path):
             finally:
                 backup.close()
             db.executescript(Path(__file__).with_name('migration_003.sql').read_text())
+            version = 3
+        if version == 3:
+            backups = path.parent / 'backups'
+            backups.mkdir(exist_ok=True)
+            stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+            backup = sqlite3.connect(backups / f'pre-v4-{stamp}.sqlite3')
+            try:
+                db.backup(backup)
+            finally:
+                backup.close()
+            db.executescript(Path(__file__).with_name('migration_004.sql').read_text())

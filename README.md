@@ -1,44 +1,33 @@
 # Unreal Academy
 
-Phase 3 adds parent-reviewed guided lessons, knowledge checks, practical work
-review, persistent XP and levels to the local course player. Authentication,
-automated Unreal project assessment and live AI services remain future work.
+Phase 3 adds guided missions, automatic knowledge checks, optional practical
+activities, persistent XP and levels to the local course player. Parent setup
+handles video libraries, course imports, transcripts and local settings.
 
-## Guided lesson pilot
+## Guided missions
 
-The private lesson 4 draft is available under **Parent setup → Guided lessons**.
-Open **Review the full lesson and answer key**, review it with the caveats and
-practical rubric, then click **Approve lesson for Jaxon**. The student course
-card then offers **Start guided lesson**, which opens that video directly.
-Earlier videos stay available; they are not automatically marked watched.
+Authored missions publish straight to Jaxon's portal. There is no approval queue.
+Existing drafts become available on backend startup. Open a course or the
+dashboard's guided mission to learn; lessons without a mission remain watchable.
 
-The pilot contains seven timestamped sections, 12 scenario-based checks with
-hints and explanations, and an optional character spawn lab. Use section buttons
-to seek the video, pause to discuss predictions, then answer checks. The practical
-task may be completed another day. It saves a prediction, observation and
-explanation; show the actual editor or a locally saved screenshot to the parent.
-Screenshot upload and automatic project grading are not implemented.
+All correct knowledge checks complete a mission automatically. First correct
+answers earn the authored XP once; wrong answers, repeats and watching earn zero.
+Levels advance every 100 XP. Practical steps and showing progress to a parent
+are optional, with no written submission, grading wait or new practice XP.
+Previously earned XP, submissions and playback progress remain saved.
 
-Each first correct check earns 10 XP, even after a retry. Repeating it earns no
-more. Wrong answers and watching award zero. The 12 checks offer 120 XP; practical
-work offers 60 XP once, only after parent approval against the rubric. A parent
-can request a revision with feedback. Quiz, watched and practical states remain
-separate. Levels start at 1 and advance every 100 XP (Level 2 at 100, Level 3 at
-200). `settings.xp_per_level` holds that positive threshold. A level is a progress
-marker, not a mastery certificate.
-
-The authored course-specific JSON and detailed analysis are private files under
-`data/`, excluded from Git and images. Import the local draft into SQLite with:
+Purchased transcripts and authored JSON stay in private, Git-ignored `data/`.
+Publish a mission or apply a correction with:
 
 ```powershell
-docker compose exec -T backend python -m app.guided /data/lesson4-guided.json
+docker compose exec -T backend python -m app.guided /data/path-to-guide.json
 ```
 
-Import creates or updates a **draft**; it never publishes automatically. A
-published document is immutable in this milestone. Source hashes bind it to the
-video/subtitles; changed sources block its use. A complete published-revision
-editor is future work. A new checkout without the private local file/database
-does not include purchased-course curriculum.
+Import validates and publishes immediately. Reimport updates the existing guide;
+keep question IDs stable for corrections so earned XP is not awarded again.
+Previous documents are archived under `data/backups/guides/`. Source changes
+block outdated guides until they are checked and reimported. Refresh the portal
+after importing. See [mission authoring](docs/MISSION_AUTHORING.md).
 
 Schema migration 3 first saves a consistent `data/backups/pre-v3-*.sqlite3`
 snapshot. It retains existing courses/playback and adds guided documents, quiz
@@ -146,10 +135,21 @@ the lesson or hiding the page. Power loss or an abrupt browser close can lose
 the last checkpoint. Reaching the end marks the lesson watched; you can also
 use **I watched this lesson** or undo that state to start it again from the
 beginning. Watching does not establish
-mastery: practice the technique in Unreal Engine. Structured quizzes and
-assignment review are not available yet. Progress is for one local student.
+mastery: practice the technique in Unreal Engine. Published guided lessons include
+automatically checked quizzes and optional practical work; other videos remain available
+without invented quizzes. Progress is for one local student.
 
 ## Video compatibility and conversion
+
+For the linked Udemy course, use **Watch on Udemy** to open a selected lecture in
+a new tab, then return for published portal activities. Use the portal's manual
+completion button after watching/reading; Udemy progress and playback do not sync.
+Opening a link and marking completion award zero XP. Parent setup includes private
+manifest import and captured transcript review. See
+[Udemy integration](docs/UDEMY_INTEGRATION.md) and
+[capture/verification results](docs/UDEMY_VERIFICATION.md).
+
+The local-video conversion instructions below apply to imported MP4 courses.
 
 The importer uses ffprobe (included in the backend image) to check formats.
 H.264 8-bit 4:2:0 MP4 video with AAC/MP3 or no audio is accepted. Unsupported,
@@ -243,9 +243,7 @@ the stored message. Container replacement also retains this bind-mounted file:
 - `GET /api/xp`: XP total, current level and progress to the next level.
 - `GET /api/lessons/{id}/guide`: published guided lesson and saved learning state.
 - `POST /api/guides/{id}/questions/{question}/answer`: JSON `{"answer":"exact option text"}`.
-- `POST /api/guides/{id}/practice`: prediction, observation and explanation strings.
-- `GET /api/parent/guides` and `POST /api/parent/guides/{id}/publish`: review and publish drafts.
-- `GET /api/parent/submissions` and `POST /api/parent/submissions/{id}/review`: evidence and feedback.
+- Legacy practice submission, review and publication endpoints remain for historical compatibility; the current portal does not use them.
 
 `backend/app/schema.sql` initializes schema version 1 using SQLite `user_version`.
 The `settings` table has a text primary key and non-null text value. Initial data
@@ -312,7 +310,7 @@ a course to a different top-level folder name is not automatically reconciled.
 ## Learner interface redesign
 
 The dashboard, course library, learning workspace, progress profile and parent
-review screens share a responsive visual system. XP and learning records reflect
+setup screens share a responsive visual system. XP and learning records reflect
 saved results. Badge and cosmetic concepts remain development-only demonstrations.
 
 See [design audit and rationale](docs/DESIGN_REDESIGN.md) and

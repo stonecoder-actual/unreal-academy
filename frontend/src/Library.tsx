@@ -8,10 +8,12 @@ type Lesson = {
   id: string; title: string; relative_path: string; position: number;
   duration: number | null; playable: number; available: number; watched: number;
   caption_path: string | null; updated_at: string | null;
+  external_url?: string | null; item_kind?: 'video'|'article'|'quiz'; section_title?: string|null;
+  transcript_status?: 'captured'|'pending'|'not_applicable';
 };
 type Resource = { id: string; relative_path: string; lesson_id: string | null };
-type CourseSummary = { id: string; title: string; folder: string; lesson_count: number; watched_count: number; started_count: number };
-type Course = { id: string; title: string; lessons: Lesson[]; resources: Resource[] };
+type CourseSummary = { id: string; title: string; folder: string; source_type?:string; difficulty?:string; lesson_count: number; watched_count: number; started_count: number };
+type Course = { id: string; title: string; source_type?:string; lessons: Lesson[]; resources: Resource[] };
 
 function minutes(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
@@ -65,8 +67,16 @@ function Player({ lesson, resources, onProgress, checkpoint, index, total, onNex
     };
   }, []);
   return <section className="player" aria-labelledby="lesson-title">
-    <div className="lesson-heading"><p className="eyebrow">LESSON {index} OF {total}</p><span className={`pill ${lesson.watched?'watched-pill':''}`}><Icon name={lesson.watched?'check':'play'} size={14}/>{lesson.watched?'VIDEO WATCHED':'WATCH & EXPLORE'}</span></div><h2 id="lesson-title" tabIndex={-1}>{lesson.title}</h2>
-    {!lesson.available ? <p role="alert">This video is missing. Ask your parent to restore its file and rescan the course.</p>
+    <div className="lesson-heading"><p className="eyebrow">LESSON {index} OF {total}</p><span className={`pill ${lesson.watched?'watched-pill':''}`}><Icon name={lesson.watched?'check':'play'} size={14}/>{lesson.watched?lesson.external_url?'COMPLETED HERE':'VIDEO WATCHED':'WATCH & EXPLORE'}</span></div><h2 id="lesson-title" tabIndex={-1}>{lesson.title}</h2>
+    {lesson.external_url ? <div className="external-lesson">
+      <p className="eyebrow">{lesson.item_kind==='video'?'WATCH ON UDEMY':lesson.item_kind==='quiz'?'UDEMY COURSE QUIZ':'UDEMY READING & RESOURCES'}</p>
+      <h3>Your lesson opens in a new tab.</h3><p>Keep Unreal Academy open. When you return, record your progress and explore any published checks or practical challenge below.</p>
+      <a className="button-link" href={lesson.external_url} target="_blank" rel="noopener noreferrer">{lesson.item_kind==='video'?'Watch on Udemy':'Open on Udemy'} <Icon name="arrow"/></a>
+      <p className="muted">Udemy needs an internet connection and your signed-in purchased course. Playback and Udemy completion do not sync here.</p>
+      <button className="secondary" onClick={()=>save(0,!lesson.watched)}>{lesson.watched?'Undo completed state':lesson.item_kind==='video'?'I watched this lesson':'I completed this item on Udemy'}</button>
+      <p>{lesson.transcript_status==='captured'?'Transcript captured for personalized mission preparation.':lesson.item_kind==='video'?'Transcript preparation is pending. You can still watch this lesson on Udemy.':'This item is a reading or Udemy quiz; it has no video transcript.'}</p>
+      <p>Opening the link or marking it complete earns no XP. Knowledge checks earn XP automatically; practical activities are optional.</p>
+    </div> : !lesson.available ? <p role="alert">This video is missing. Ask your parent to restore its file and rescan the course.</p>
       : !lesson.playable ? <p role="alert">This video needs a format check or conversion before it can play. Ask your parent to follow the video conversion instructions in the README.</p>
       : <>
         <video ref={video} controls preload="metadata" src={`/api/lessons/${lesson.id}/video`}
@@ -105,11 +115,11 @@ function Player({ lesson, resources, onProgress, checkpoint, index, total, onNex
     <details className="resource-drawer"><summary>Lesson resources <span className="count-badge">{resources.length}</span></summary>
     {resources.length ? <ul>{resources.map(resource => <li key={resource.id}>
       <a href={`/api/resources/${resource.id}/download`}>{resource.relative_path}</a>
-    </li>)}</ul> : <p>No extra files are needed from this lesson's resource list.</p>}</details>
-    <GuidedLesson lessonId={lesson.id} onSeek={seconds=>{
+    </li>)}</ul> : <p>{lesson.external_url?'Find any lesson resources in Udemy’s Resources menu.':'No extra files are needed from this lesson\'s resource list.'}</p>}</details>
+    <GuidedLesson lessonId={lesson.id} externalUrl={lesson.external_url??undefined} showPending={!!lesson.external_url} onSeek={seconds=>{
       if(video.current){video.current.pause();video.current.currentTime=seconds;video.current.scrollIntoView({behavior:'smooth',block:'center'});}
     }}/>
-    {onNext&&<div className="next-lesson"><div><p className="eyebrow">WHEN YOU'RE READY</p><p>Take your time. Your place is saved.</p></div><button className="secondary" onClick={onNext}>Next video<Icon name="arrow"/></button></div>}
+    {onNext&&<div className="next-lesson"><div><p className="eyebrow">WHEN YOU'RE READY</p><p>Take your time. Your progress is saved here.</p></div><button className="secondary" onClick={onNext}>{lesson.external_url?'Next lesson':'Next video'}<Icon name="arrow"/></button></div>}
   </section>;
 }
 
@@ -126,7 +136,7 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
   const [search,setSearch]=useState('');
   const [filter,setFilter]=useState('All courses');
   const [lessonSearch,setLessonSearch]=useState('');
-  const [mission,setMission]=useState<{title:string;solved:number;total:number;approved:boolean;lessonId:string;courseId:string}|null>(null);
+  const [mission,setMission]=useState<{title:string;solved:number;total:number;requiresPractice:boolean;reflection:boolean;lessonId:string;courseId:string}|null>(null);
   const [progressRevision,setProgressRevision]=useState(0);
   useEffect(()=>{const refresh=()=>setProgressRevision(n=>n+1);window.addEventListener('academy-xp',refresh);return()=>window.removeEventListener('academy-xp',refresh);},[]);
   useEffect(() => {
@@ -135,9 +145,9 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
       if(!active)return;setGuides(result);
       const candidates=await Promise.all(result.map(async (g:{lesson_id:string;course_id:string})=>{
         const detail=await request(`/api/lessons/${g.lesson_id}/guide`);
-        return detail?{title:detail.document.title,solved:detail.solved.length,total:detail.document.questions.length,approved:detail.submission?.status==='approved',lessonId:g.lesson_id,courseId:g.course_id}:null;
+        return detail?{title:detail.document.title,solved:detail.solved.length,total:detail.document.questions.length,requiresPractice:!!detail.document.practice,reflection:detail.document.practice?.kind==='reflection',lessonId:g.lesson_id,courseId:g.course_id}:null;
       }));
-      if(active)setMission(candidates.find(m=>m&&(m.solved<m.total||!m.approved))??candidates.find(Boolean)??null);
+      if(active)setMission(candidates.find(m=>m&&m.solved<m.total)??candidates.find(Boolean)??null);
     }).catch(e=>{if(active)setError(e.message);});
     request('/api/courses').then(result => { if (active) { setCourses(result); setError(''); } })
       .catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); });
@@ -169,8 +179,8 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
     setCourse(current => current ? { ...current, lessons: current.lessons.map(l => l.id === id ? { ...l, position, watched } : l) } : null);
   }
   const lesson = course?.lessons.find(l => l.id === lessonId);
-  const missionComplete=!!mission&&mission.solved===mission.total&&mission.approved;
-  const visibleCourses=courses.filter(c=>c.title.toLowerCase().includes(search.toLowerCase()) && (filter==='All courses'||coursePresentation(c.folder).difficulty===filter));
+  const missionComplete=!!mission&&mission.solved===mission.total;
+  const visibleCourses=courses.filter(c=>c.title.toLowerCase().includes(search.toLowerCase()) && (filter==='All courses'||(c.difficulty??coursePresentation(c.folder).difficulty)===filter));
   async function closeCourse(){
     ++selection.current;
     if(course&&lessonId)remembered.current[course.id]=lessonId;
@@ -179,7 +189,7 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
   }
   const groupedLessons = new Map<string,Lesson[]>();
   course?.lessons.filter(l=>l.title.toLowerCase().includes(lessonSearch.toLowerCase())).forEach(l=>{
-    const group=l.relative_path.includes('/')?l.relative_path.split('/').slice(0,-1).join(' / '):'Course lessons';
+    const group=l.section_title??(l.relative_path.includes('/')?l.relative_path.split('/').slice(0,-1).join(' / '):'Course lessons');
     groupedLessons.set(group,[...(groupedLessons.get(group)??[]),l]);
   });
   return <>
@@ -190,17 +200,20 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
       {home&&<>
         <section className="mission-hero"><div className="mission-copy"><span className="pill"><Icon name="spark" size={16}/>{missionComplete?'MISSION COMPLETED':mission?'YOUR NEXT MISSION':'YOUR CREATIVE WORKSPACE'}</span>
           <h2>{mission?mission.title.replace(/^Mission:\s*/,''):'Big worlds start with small ideas.'}</h2>
-          <p>{missionComplete?'Your checks are solved and your build is approved. Revisit the ideas for practice, or explore another course.':mission&&mission.solved===mission.total?'You’ve solved the checks. Try the optional build and show your parent what you discovered.':mission?'Watch a little, test your understanding, then bring the idea to life in Unreal Engine.':'Pick a course below and take your next step toward building your own games.'}</p>
-          {mission&&<><div className="mission-meta"><span><Icon name="check" size={16}/>{mission.solved} of {mission.total} checks solved</span><span><Icon name="cube" size={16}/>{mission.approved?'Build approved':'Hands-on practice'}</span></div><button disabled={loading} onClick={()=>openCourse(mission.courseId,mission.lessonId)}>{missionComplete?'Revisit mission':mission.solved?'Continue mission':'Open guided mission'}<Icon name="arrow"/></button></>}
+          <p>{missionComplete?'Your quiz is complete. Keep learning, try an optional activity, or share your progress whenever you like.':mission?'Watch the lesson, review the ideas, then answer the automatically checked questions.':'Pick a course below and take your next step toward building your own games.'}</p>
+          {mission&&<><div className="mission-meta"><span><Icon name="check" size={16}/>{mission.solved} of {mission.total} checks solved</span><span><Icon name={mission.requiresPractice?'cube':'check'} size={16}/>{mission.requiresPractice?'Optional activity':'Automatic quiz & XP'}</span></div><button disabled={loading} onClick={()=>openCourse(mission.courseId,mission.lessonId)}>{missionComplete?'Revisit mission':mission.solved?'Continue mission':'Open guided mission'}<Icon name="arrow"/></button></>}
         </div><CourseArt hero/></section>
         <Evidence/>
       </>}
-      <section className="library-section"><div className="section-heading"><div><p className="eyebrow">BUILD YOUR SKILLS</p><h2>{home?'Your learning library':'All courses'}</h2></div><span className="muted">{courses.length} courses on your computer</span></div>
+      <section className="library-section"><div className="section-heading"><div><p className="eyebrow">BUILD YOUR SKILLS</p><h2>{home?'Your learning library':'All courses'}</h2></div><span className="muted">{courses.length} courses in your library</span></div>
       {!home&&<div className="library-tools"><div><label className="sr-only" htmlFor="course-search">Search courses</label><input id="course-search" type="search" placeholder="Find a course…" value={search} onChange={e=>setSearch(e.target.value)}/></div><div><label className="sr-only" htmlFor="difficulty-filter">Filter by difficulty</label><select id="difficulty-filter" value={filter} onChange={e=>setFilter(e.target.value)}>{['All courses','Beginner','Intermediate'].map(f=><option key={f}>{f}</option>)}</select></div></div>}
       {!loading && !courses.length && <p>Your first course is on its way. Ask your parent to add it in Parent setup.</p>}
       <div className="course-grid">{visibleCourses.map(item => {
         const guided = guides.find(g => g.course_id === item.id);
-        const {difficulty,theme,category}=coursePresentation(item.folder);
+        const presentation=coursePresentation(item.folder);
+        const difficulty=item.difficulty??presentation.difficulty;
+        const theme=item.source_type==='udemy'?'teal':presentation.theme;
+        const category=item.source_type==='udemy'?'UDEMY · BLUEPRINT GAME DEVELOPMENT':presentation.category;
         const status = item.lesson_count > 0 && item.watched_count === item.lesson_count
           ? 'All videos watched' : item.started_count ? 'In progress' : 'Ready to start';
         return <article className="course-card" key={item.id} aria-labelledby={`course-${item.id}`}>
@@ -211,12 +224,12 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
           <p className="course-category">{category}</p>
           <h3 id={`course-${item.id}`}>{item.title}</h3>
           <div className="course-card-details">
-            <p className="course-count"><Icon name="play" size={14}/>{item.lesson_count} video lessons</p>
+            <p className="course-count"><Icon name="play" size={14}/>{item.lesson_count} {item.source_type==='udemy'?'curriculum items · online':'video lessons'}</p>
             <p className="course-guidance">{guided ? 'Includes a guided mission' : 'Learn at your own pace'}</p>
             <div className="course-watch-progress">
-              <p>{item.watched_count} of {item.lesson_count} videos watched</p>
+              <p>{item.watched_count} of {item.lesson_count} {item.source_type==='udemy'?'items completed':'videos watched'}</p>
               <progress max={Math.max(1, item.lesson_count)} value={item.watched_count}
-                aria-label={`Videos watched in ${item.title}`}/>
+                aria-label={`${item.source_type==='udemy'?'Items completed':'Videos watched'} in ${item.title}`}/>
             </div>
           </div>
           <button disabled={loading} onClick={() => openCourse(item.id, item.started_count ? undefined : guided?.lesson_id)}>
@@ -227,22 +240,22 @@ export function Library({ revision, home=false, welcome='' }: { revision: number
       {!loading&&courses.length>0&&!visibleCourses.length&&<div className="empty-state"><Icon name="library"/><h3>No courses found</h3><p>Try another name or difficulty.</p><button className="secondary" onClick={()=>{setSearch('');setFilter('All courses');}}>Clear filters</button></div>}
     </section></> : <>
       <button className="text-button" onClick={()=>void closeCourse()}><Icon name="back"/>All courses</button>
-      <header className="course-heading"><p className="eyebrow">YOUR LEARNING WORKSPACE</p><h1 id="course-title-heading" tabIndex={-1}>{course.title}</h1><p>{course.lessons.filter(l=>l.available&&l.watched).length} of {course.lessons.filter(l=>l.available).length} videos watched · Choose a lesson below</p></header>
+      <header className="course-heading"><p className="eyebrow">YOUR LEARNING WORKSPACE</p><h1 id="course-title-heading" tabIndex={-1}>{course.title}</h1><p>{course.lessons.filter(l=>l.available&&l.watched).length} of {course.lessons.filter(l=>l.available).length} {course.source_type==='udemy'?'items completed here · Videos open on Udemy':'videos watched · Choose a lesson below'}</p></header>
       <div className="lesson-layout"><aside className="lesson-sidebar" aria-label="Lessons"><div className="section-heading"><h2>Course content</h2><span className="count-badge">{course.lessons.length}</span></div>
         <label className="sr-only" htmlFor="lesson-search">Find a lesson</label><input id="lesson-search" type="search" value={lessonSearch} onChange={e=>setLessonSearch(e.target.value)} placeholder="Find a lesson…"/>
         <div className="lesson-groups">{Array.from(groupedLessons,([group,items])=><details key={group} className="lesson-group" open={!!lessonSearch||items.some(l=>l.id===lessonId)||groupedLessons.size===1}><summary>{group}<span>{items.length}</span></summary><ol>{items.map(item => <li key={item.id}><button className={item.id === lessonId ? 'lesson selected' : 'lesson'}
           aria-current={item.id === lessonId ? 'step' : undefined} onClick={() => setLessonId(item.id)}>
-          <span className="lesson-state"><Icon name={item.watched?'check':'play'} size={15}/></span><span>{item.title}<small>{!item.available ? 'Missing file' : item.watched ? 'Watched' : item.position > 0 ? `Resume at ${minutes(item.position)}` : 'Ready to start'}
+          <span className="lesson-state"><Icon name={item.watched?'check':'play'} size={15}/></span><span>{item.title}<small>{!item.available ? 'Missing file' : item.watched ? item.external_url?'Completed here':'Watched' : item.external_url?`${item.item_kind==='video'?'Video':item.item_kind==='quiz'?'Quiz':'Reading'} · Udemy`:item.position > 0 ? `Resume at ${minutes(item.position)}` : 'Ready to start'}
             {item.duration ? ` · ${minutes(item.duration)}` : ''}</small>
           </span></button></li>)}</ol></details>)}</div>{!groupedLessons.size&&<p>No lessons match your search.</p>}
       </aside>{lesson && <Player key={lesson.id} lesson={lesson}
         resources={course.resources.filter(resource => resource.lesson_id === lesson.id)} onProgress={progress} checkpoint={checkpoint}
         index={course.lessons.findIndex(l=>l.id===lesson.id)+1} total={course.lessons.length}
         onNext={course.lessons.slice(course.lessons.findIndex(l=>l.id===lesson.id)+1).find(l=>l.available&&l.playable)?async()=>{await checkpoint.current?.();setLessonId(course.lessons.slice(course.lessons.findIndex(l=>l.id===lesson.id)+1).find(l=>l.available&&l.playable)!.id);}:null}/>}</div>
-      <section><h3>Course resources</h3><p>Shared resources are available to every lesson. Copy editable projects to your Projects folder before opening them in Unreal Engine.</p>
+      <section><h3>Course resources</h3><p>{course.source_type==='udemy'?'Open Udemy to access course resources. Copy editable projects to your own Projects folder before opening them in Unreal Engine.':'Shared resources are available to every lesson. Copy editable projects to your Projects folder before opening them in Unreal Engine.'}</p>
         {course.resources.filter(r => !r.lesson_id).length ? <ul>{course.resources.filter(r => !r.lesson_id).map(r => <li key={r.id}>
           <a href={`/api/resources/${r.id}/download`}>{r.relative_path}</a></li>)}</ul> : <p>No shared resources found.</p>}
-      </section>
+        </section>
     </>}
   </>;
 }

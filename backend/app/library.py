@@ -212,6 +212,8 @@ def create_library_router(database: Path, root: Path):
             lessons.sort(key=lambda row: natural_key(row['relative_path']))
             for row in lessons:
                 row.pop('content_hash')
+                if row['external_url']:
+                    row['transcript_status'] = 'captured' if db.execute('SELECT 1 FROM lesson_transcripts WHERE lesson_id=?', (row['id'],)).fetchone() else ('not_applicable' if row['item_kind'] != 'video' else 'pending')
             resources = [dict(row) for row in db.execute('SELECT * FROM resources WHERE course_id=? AND available=1', (course_id,))]
             return {**dict(course), 'lessons': lessons, 'resources': resources}
 
@@ -233,6 +235,8 @@ def create_library_router(database: Path, root: Path):
         # FileResponse implements standards-compliant byte ranges from the HTTP Range header.
         with connect(database) as db:
             lesson = lesson_row(db, lesson_id)
+        if lesson['external_url']:
+            raise HTTPException(409, 'Open this lesson on Udemy; it is not a local video')
         file = existing_file(f"{lesson['folder']}/{lesson['relative_path']}")
         return FileResponse(file, media_type='video/mp4')
 
@@ -240,6 +244,8 @@ def create_library_router(database: Path, root: Path):
     def captions(lesson_id: str):
         with connect(database) as db:
             lesson = lesson_row(db, lesson_id)
+        if lesson['external_url']:
+            raise HTTPException(404, 'Use captions on Udemy for this lesson')
         if not lesson['caption_path']:
             raise HTTPException(404, 'No matching subtitles')
         file = existing_file(f"{lesson['folder']}/{lesson['caption_path']}")

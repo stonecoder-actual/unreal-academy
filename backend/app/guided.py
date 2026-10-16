@@ -3,6 +3,7 @@ import json
 import os
 import uuid
 from pathlib import Path
+from datetime import datetime, timezone
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
@@ -26,14 +27,15 @@ class Question(BaseModel):
 class Section(BaseModel):
     id: str
     title: str
-    start: float = Field(ge=0, allow_inf_nan=False)
-    end: float = Field(gt=0, allow_inf_nan=False)
+    start: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    end: float | None = Field(default=None, gt=0, allow_inf_nan=False)
     objective: str
     notes: list[str]
     pause_prompt: str
 
 
 class Practice(BaseModel):
+    kind: Literal['build', 'reflection'] = 'build'
     title: str
     estimated_minutes: int
     steps: list[str]
@@ -52,11 +54,17 @@ class GuideDocument(BaseModel):
     references: list[dict[str, str]]
     sections: list[Section] = Field(min_length=1, max_length=30)
     questions: list[Question] = Field(min_length=1, max_length=100)
-    practice: Practice
+    practice: Practice | None = None
 
 
 def source(db, lesson_id, root):
     row = db.execute('SELECT l.*,c.folder FROM lessons l JOIN courses c ON c.id=l.course_id WHERE l.id=?', (lesson_id,)).fetchone()
+    if row and row['available'] and row['external_url']:
+        transcript = db.execute('SELECT content_hash FROM lesson_transcripts WHERE lesson_id=?', (lesson_id,)).fetchone()
+        if not transcript:
+            raise HTTPException(409, 'This guide needs a captured lesson transcript')
+        # This hash identifies the external link, not the remote video's bytes.
+        return row['content_hash'], transcript['content_hash'], row['duration']
     if not row or not row['available'] or not row['caption_path']:
         raise HTTPException(409, 'This guide needs an available lesson and matching subtitles')
     subtitle = safe_path(root, f"{row['folder']}/{row['caption_path']}")
@@ -79,22 +87,42 @@ def import_guide(database, root, document):
     if any(q.correct >= len(q.options) or q.section not in section_ids for q in parsed.questions):
         raise ValueError('Question answer or section is invalid')
     with connect(database) as db:
+        db.execute('BEGIN IMMEDIATE')
         video_hash, subtitle_hash, duration = source(db, parsed.lesson_id, root)
-        if any(s.end <= s.start or (duration and s.end > duration + 1) for s in parsed.sections):
+        if any((s.start is None) != (s.end is None) or
+               (s.start is not None and (s.end <= s.start or (duration and s.end > duration + 1)))
+               for s in parsed.sections):
             raise ValueError('Section times are outside the lesson')
         doc = parsed.model_dump_json()
         existing = db.execute('SELECT * FROM guided_lessons WHERE lesson_id=?', (parsed.lesson_id,)).fetchone()
         if existing:
-            if existing['document'] == doc and existing['video_hash'] == video_hash and existing['subtitle_hash'] == subtitle_hash:
+            if GuideDocument.model_validate_json(existing['document']).model_dump_json() == doc and existing['video_hash'] == video_hash and existing['subtitle_hash'] == subtitle_hash:
+                db.execute("UPDATE guided_lessons SET status='published' WHERE id=?", (existing['id'],))
                 return existing['id']
-            if existing['status'] == 'published':
-                raise ValueError('Published guides are immutable; use a reviewed revision workflow')
-            db.execute('UPDATE guided_lessons SET document=?,video_hash=?,subtitle_hash=? WHERE id=?', (doc, video_hash, subtitle_hash, existing['id']))
+            # Keep the previous source-bound document before a direct correction.
+            backups = Path(database).parent / 'backups' / 'guides'
+            backups.mkdir(parents=True, exist_ok=True)
+            with (backups / f'{uuid.uuid4()}.json').open('x', encoding='utf-8') as snapshot:
+                json.dump({**dict(existing), 'archived_at': datetime.now(timezone.utc).isoformat()}, snapshot, ensure_ascii=False, indent=2)
+            db.execute("UPDATE guided_lessons SET status='published',document=?,video_hash=?,subtitle_hash=? WHERE id=?", (doc, video_hash, subtitle_hash, existing['id']))
             return existing['id']
         guide_id = str(uuid.uuid4())
-        db.execute('INSERT INTO guided_lessons(id,lesson_id,status,document,video_hash,subtitle_hash) VALUES(?,?,\'draft\',?,?,?)',
+        db.execute('INSERT INTO guided_lessons(id,lesson_id,status,document,video_hash,subtitle_hash) VALUES(?,?,\'published\',?,?,?)',
                    (guide_id, parsed.lesson_id, doc, video_hash, subtitle_hash))
         return guide_id
+
+
+def publish_existing_guides(database):
+    """Retire the old draft gate; source validation still applies on every use."""
+    with connect(database) as db:
+        db.execute('BEGIN IMMEDIATE')
+        drafts = db.execute("SELECT * FROM guided_lessons WHERE status='draft'").fetchall()
+        if drafts:
+            backups = Path(database).parent / 'backups' / 'guides'
+            backups.mkdir(parents=True, exist_ok=True)
+            with (backups / f'pre-direct-publication-{uuid.uuid4()}.json').open('x', encoding='utf-8') as snapshot:
+                json.dump([dict(row) for row in drafts], snapshot, ensure_ascii=False, indent=2)
+            db.execute("UPDATE guided_lessons SET status='published' WHERE status='draft'")
 
 
 def xp_summary(db):
@@ -131,7 +159,7 @@ def create_guided_router(database, root):
             raise HTTPException(404, 'Published guided lesson not found')
         video_hash, subtitle_hash, _ = source(db, row['lesson_id'], root)
         if (video_hash, subtitle_hash) != (row['video_hash'], row['subtitle_hash']):
-            raise HTTPException(409, 'Source changed; this guide needs parent review before use')
+            raise HTTPException(409, 'Source changed; update and reimport this mission before use')
         return row, json.loads(row['document'])
 
     @router.get('/xp')
@@ -142,7 +170,7 @@ def create_guided_router(database, root):
     @router.get('/guided-lessons')
     def list_guides():
         with connect(database) as db:
-            return [dict(r) for r in db.execute("SELECT g.id,g.lesson_id,g.status,l.course_id FROM guided_lessons g JOIN lessons l ON l.id=g.lesson_id WHERE g.status='published'")]
+            return [dict(r) for r in db.execute("SELECT g.id,g.lesson_id,g.status,l.course_id FROM guided_lessons g JOIN lessons l ON l.id=g.lesson_id WHERE g.status='published' ORDER BY l.course_id,l.relative_path")]
 
     @router.get('/lessons/{lesson_id}/guide')
     def student_guide(lesson_id: str):
@@ -153,7 +181,10 @@ def create_guided_router(database, root):
             guide, doc = get_guide(db, row['id'])
             solved = [r[0].split(':', 2)[-1] for r in db.execute("SELECT award_key FROM xp_transactions WHERE guide_id=? AND award_key LIKE 'question:%'", (guide['id'],))]
             latest = db.execute('SELECT * FROM practice_submissions WHERE guide_id=? ORDER BY created_at DESC,rowid DESC LIMIT 1', (guide['id'],)).fetchone()
-            return {'id': guide['id'], 'status': guide['status'], 'document': {**doc, 'questions': [{k:v for k,v in q.items() if k not in ('correct','explanation')} for q in doc['questions']]},
+            current_ids = {q['id'] for q in doc['questions']}
+            solved = [qid for qid in solved if qid in current_ids]
+            completed = all(q['id'] in solved for q in doc['questions'])
+            return {'id': guide['id'], 'status': guide['status'], 'completed': completed, 'document': {**doc, 'questions': [{k:v for k,v in q.items() if k not in ('correct','explanation')} for q in doc['questions']]},
                     'solved': solved, 'submission': dict(latest) if latest else None, 'xp': xp_summary(db)}
 
     @router.post('/guides/{guide_id}/questions/{question_id}/answer')
@@ -173,11 +204,13 @@ def create_guided_router(database, root):
                 awarded = question['xp'] if inserted.rowcount else 0
             return {'correct': correct, 'awarded_xp': awarded, 'explanation': question['explanation'], 'xp': xp_summary(db)}
 
-    @router.post('/guides/{guide_id}/practice')
+    @router.post('/guides/{guide_id}/practice', deprecated=True)
     def submit_practice(guide_id: str, payload: Evidence):
         with connect(database) as db:
             db.execute('BEGIN IMMEDIATE')
-            get_guide(db, guide_id)
+            _, doc = get_guide(db, guide_id)
+            if not doc.get('practice'):
+                raise HTTPException(409, 'This mission uses automatic quiz completion; no written submission or parent review is needed')
             latest = db.execute('SELECT status FROM practice_submissions WHERE guide_id=? ORDER BY created_at DESC,rowid DESC LIMIT 1', (guide_id,)).fetchone()
             if latest and latest['status'] in ('pending','approved'):
                 raise HTTPException(409, 'Your work is already awaiting review or approved')
@@ -198,7 +231,8 @@ def create_guided_router(database, root):
                 result.append({**dict(row), 'document':json.loads(row['document']), 'source_error':source_error})
             return result
 
-    @router.post('/parent/guides/{guide_id}/publish')
+    # Legacy compatibility only: new imports publish directly; no approval UI.
+    @router.post('/parent/guides/{guide_id}/publish', deprecated=True)
     def publish(guide_id: str):
         with connect(database) as db:
             get_guide(db, guide_id, published=False)
@@ -210,7 +244,7 @@ def create_guided_router(database, root):
         with connect(database) as db:
             return [dict(r) for r in db.execute('SELECT * FROM practice_submissions ORDER BY created_at DESC,rowid DESC')]
 
-    @router.post('/parent/submissions/{submission_id}/review')
+    @router.post('/parent/submissions/{submission_id}/review', deprecated=True)
     def review(submission_id: str, payload: Review):
         with connect(database) as db:
             db.execute('BEGIN IMMEDIATE')
@@ -220,6 +254,8 @@ def create_guided_router(database, root):
             if submission['status'] == 'changes_requested':
                 raise HTTPException(409, 'Review the student\'s new submission after they revise the work')
             _, doc = get_guide(db, submission['guide_id'])
+            if not doc.get('practice'):
+                raise HTTPException(409, 'This mission has no parent-reviewed activity')
             if submission['status'] == 'approved' and payload.decision != 'approved':
                 raise HTTPException(409, 'Approved evidence and its XP cannot be revoked here')
             db.execute('UPDATE practice_submissions SET status=?,feedback=? WHERE id=?', (payload.decision, payload.feedback, submission_id))
