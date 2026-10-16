@@ -4,12 +4,228 @@ The learning portal combines course videos with transcript-based key takeaways,
 automatic knowledge checks, persistent XP and levels. Parent setup
 handles video libraries, course imports, transcripts and local settings.
 
-For the phased inventory, read [current project status](docs/PROJECT_STATUS.md).
-To install on Jaxon's laptop and enable automatic Git updates, use the
-[Windows deployment guide](docs/LAPTOP_DEPLOYMENT.md) and `scripts/Academy.ps1`.
-That managed installation keeps data outside Git and verifies progress before
-opening an updated release. The direct Compose commands below remain the
-development workflow; use the managed script for the laptop installation.
+**Installing on Jaxon's laptop? Start with the walkthrough below.** It assumes
+nothing is installed and uses the managed installer to keep progress outside
+Git and Docker images. The later development commands are for Sam's coding
+checkout. See [project status](docs/PROJECT_STATUS.md) for the phased inventory.
+
+## Install on a new Windows laptop
+
+### 1. Install the requirements
+
+Do the setup while signed into **the Windows account Jaxon will use**. A parent
+handles administrator prompts, software terms and GitHub/Udemy sign-in.
+
+| Install | What to do |
+| --- | --- |
+| Windows and hardware | Use a supported 64-bit Windows laptop with virtualization enabled. Check [Docker's Windows requirements](https://docs.docker.com/desktop/setup/install/windows-install/) before downloading. The installer checks for an 8 GB-class machine and at least 10 GB free for builds; videos, Unreal projects, backups and retained releases need additional space. |
+| WSL 2 | Follow [Microsoft's WSL setup](https://learn.microsoft.com/en-us/windows/wsl/install). Open **PowerShell as administrator**, run `wsl --install`, restart when requested, and complete its first-run setup. Then run `wsl --update` and `wsl --version`. Docker's supported Hyper-V backend is an alternative. |
+| Docker Desktop | Download from [Docker's official Windows installation page](https://docs.docker.com/desktop/setup/install/windows-install/). Install with the WSL 2 backend, open Docker Desktop, complete first-run setup and wait for the engine to be running. Use **Linux containers**. Enable **Start Docker Desktop when you sign in** in its settings. |
+| Git for Windows | Download from [the official Git site](https://git-scm.com/install/windows). Keep Git Credential Manager enabled and choose the installer option that makes Git available from the command line. Close and reopen PowerShell afterward. |
+| Browser and course tools | Use a browser for the portal and sign into the purchased Udemy course on this laptop. Install [Epic Games Launcher and Unreal Engine](https://www.unrealengine.com/download) separately for following the course activities. They are not required to start the portal. |
+
+Windows PowerShell is included with Windows. **You do not need to install Python,
+Node.js, npm, FFmpeg or SQLite on the laptop**; the application dependencies run
+inside Docker. Internet is needed for installation, Git updates and Udemy videos.
+Installed local lessons and knowledge checks can work offline.
+
+Open a **new ordinary PowerShell window**, not the administrator setup window,
+and check:
+
+```powershell
+git --version
+docker --version
+docker compose version
+docker info --format '{{.OSType}}'
+```
+
+The last command must print `linux`; Compose must be version 2.24.4 or newer.
+If a command is not recognized, reopen PowerShell first. If still missing, search
+Windows for **Edit environment variables for your account**, edit **Path**, and
+add the installed tool's folder. Typical folders are:
+
+```text
+Git:    C:\Program Files\Git\cmd
+Docker: %LOCALAPPDATA%\Programs\DockerDesktop\resources\bin
+        or C:\Program Files\Docker\Docker\resources\bin
+```
+
+Choose the folder that actually contains the executable. Add an entry rather
+than replacing the existing Path, then reopen PowerShell. If `docker info` cannot
+connect, start Docker Desktop and resolve its WSL/setup message before continuing.
+
+### 2. Bring the private curriculum and videos
+
+**GitHub contains the app, not the purchased curriculum or Jaxon's saved data.**
+To install the course catalogue, transcripts and all currently authored lessons
+(including Udemy sections 1–4), use a consistent database snapshot from Sam's
+computer **once, during the first installation**.
+
+On **Sam's computer**, open PowerShell in the existing running development
+checkout and run:
+
+```powershell
+docker compose exec -T backend python -m app.maintenance backup
+```
+
+The result includes a `backup` path such as
+`/data/backups/deployments/<timestamp-and-id>.sqlite3`. With this checkout's
+`DATA_DIR=./data`, that same file is in
+`data\backups\deployments\` inside the checkout. If `DATA_DIR` was customized,
+look under that directory instead. Copy **the snapshot named by this command**
+privately by USB or another private file transfer; do not copy the active
+`academy.sqlite3` while it is in use. The snapshot contains the current catalogue,
+lesson checks, playback state, answers and XP; videos are separate.
+
+On **Jaxon's laptop**, create these folders in ordinary PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force C:\UnrealAcademy\Courses, C:\UnrealAcademy\Projects, C:\UnrealAcademy\Transfer
+```
+
+Save the snapshot as
+`C:\UnrealAcademy\Transfer\academy-initial.sqlite3`. Copy the local course folders
+from Sam's `C:\UnrealAcademy\Courses` into the laptop's `Courses` directory,
+preserving folder names and matching MP4/SRT files. Keep editable UE5 projects
+under `Projects`. Udemy videos remain on Udemy and do not need to be copied.
+Keep all these directories outside OneDrive and outside the source checkout.
+
+An empty `Courses` directory is acceptable for Udemy-only use. Missing local
+videos will remain unavailable until copied. Omitting the initial snapshot gives
+an empty academy, not the authored Udemy curriculum. A later Git update does not
+fill it in. For this installation, use the snapshot.
+
+### 3. Clone and install
+
+In ordinary PowerShell under Jaxon's Windows account:
+
+```powershell
+git clone --branch main https://github.com/stonecoder-actual/unreal-academy.git C:\UnrealAcademy\Source
+Set-Location C:\UnrealAcademy\Source
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Academy.ps1 -Action Check
+```
+
+If Git asks, sign in through Git Credential Manager with an account that can read
+the private repository. Do not paste a password or access token into these
+commands. If `Source` already exists, use the existing checkout; do not delete it
+or clone over it. A previously installed academy should use **Update** below.
+
+Once Check passes, install:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Academy.ps1 -Action Install -CoursesDirectory C:\UnrealAcademy\Courses -SeedDatabase C:\UnrealAcademy\Transfer\academy-initial.sqlite3
+```
+
+The installer builds the app, starts it, verifies the seeded learner records and
+registers automatic Git updates for this Windows user. Initial downloads/builds
+can take several minutes. It refuses to replace an existing learner database.
+Use the default root `C:\UnrealAcademy`; for another root, follow the
+[detailed deployment guide](docs/LAPTOP_DEPLOYMENT.md).
+
+### 4. Open and verify
+
+Open **[http://localhost:3000](http://localhost:3000)** and bookmark it. Compare
+Jaxon's XP, completed checks and course list with Sam's seed snapshot. Udemy
+sections 1–4 should have notes and questions. In Parent setup, rescan existing
+local courses if copied-file metadata differs; preserve their folder names.
+Open a local video/caption if using local courses and sign into Udemy separately.
+
+Check the running installation and same-origin API:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action Status
+Invoke-RestMethod http://localhost:3000/api/health
+```
+
+Health should report `status: ok` and `database: ok`. On later days, start Docker
+Desktop, wait for its engine/containers, then open the bookmark. Normal container
+restarts retain the database. If the page is unavailable, check Docker Desktop
+and run Status; do not reinstall into a different data directory.
+
+## How Jaxon gets updates without losing progress
+
+### Automatic updates
+
+Sam must **commit and push changes to GitHub's `main` branch**. A commit left
+only on Sam's computer does not reach the laptop. Docker does not watch Git;
+the installed Windows task `unreal-academy-updates` runs the updater at sign-in
+(after two minutes) and hourly while Jaxon's account is signed in and the laptop
+is on AC power. Keep Docker Desktop running, GitHub access working and internet
+connected. A sleeping or logged-out laptop will update later.
+
+The updater fetches `origin/main`, builds a new release and defers the automatic
+switch if playback or a quiz answer was saved in the last 30 minutes. It retries
+on a later run. An idle page or an unsaved answer does not count as saved activity;
+save/finish the current check when taking a break. There is a brief outage during
+the switch. After an update, refresh the browser to load the new frontend.
+
+If Windows did not allow automatic-task registration during installation, run:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action EnableUpdates
+```
+
+### Update now
+
+When Jaxon is finished learning for the moment, run this in ordinary PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action Update
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action Status
+```
+
+Manual Update bypasses the recent-activity deferral. Wait for success, refresh
+http://localhost:3000, and confirm XP and completed checks. No new commit means
+no rebuild or restart. Use this command instead of manually pulling and running
+Compose from `Source`; it fetches Git and deploys the correct saved data mounts.
+
+### Where progress lives and how it is protected
+
+| Location | Purpose |
+| --- | --- |
+| `C:\UnrealAcademy\Data\academy.sqlite3` | Persistent catalogue, transcripts, lesson checks, answers, playback progress and XP. This is outside Git and images. |
+| `C:\UnrealAcademy\Data\backups\deployments\` | Consistent database snapshots and record fingerprints made before switching releases. |
+| `C:\UnrealAcademy\Source` and `Releases` | Application code and versioned releases; replacing containers does not replace Data. |
+| `C:\UnrealAcademy\Logs\deployment.log` | Installation and update results/errors. |
+
+Before exposing the new frontend, the updater checks database integrity and
+compares existing learner records with the pre-update snapshot. It verifies
+course/lesson identities, settings, playback, quiz attempts, historical
+submissions and XP. If these checks fail, it does not expose the candidate as a
+successful update. Recovery before frontend exposure can return to the previous
+snapshot/images; after possible new learner writes, it keeps the latest data
+instead of restoring an older snapshot. See the [recovery details](docs/LAPTOP_DEPLOYMENT.md#4-how-updates-work).
+
+**For every later update, retain the same Data directory. Do not copy Sam's
+database over Jaxon's, rerun the seed installation, delete Data, or switch
+`DATA_DIR` to an empty folder.** GitHub is not a backup of learner progress.
+Make an additional private backup periodically:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action Backup
+```
+
+Copy completed snapshot files to a separate private drive for protection from
+laptop/drive loss. If an update fails, read the deployment log and retain the
+latest Data before repair; do not restore an older database over newer progress.
+
+### New or corrected lesson content is a separate private transfer
+
+Git updates deliver the application, deployment scripts and documentation.
+Purchased transcripts and authored checks are private and **do not sync through
+GitHub**. The first-install snapshot brings today's curriculum. For later new or
+corrected notes, privately copy the authored JSON from Sam's computer and import
+it into the existing laptop database:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action ImportGuide -GuideFile C:\UnrealAcademy\Transfer\lesson-63.json
+```
+
+The filename above is an example; use the actual supplied JSON. Retain its lesson
+and question IDs so earned XP stays associated with the same checks. Import
+publishes directly and preserves existing progress; it does not replace the
+database. The initial seed retains the catalogue/transcript IDs those files
+depend on. See [private content transfer](docs/LAPTOP_DEPLOYMENT.md#6-what-git-updates-do-not-transfer).
 
 ## Lesson takeaways and questions
 
@@ -23,10 +239,10 @@ First correct answers earn XP once; wrong answers, repeated successes and
 watching earn zero. All correct checks finish the lesson quiz, with no parent
 grading or approval. Existing progress and earned XP remain saved.
 
-Three Udemy lessons currently have authored notes: lesson 3 (three checks),
-lesson 5 (six checks) and lesson 6 (six checks). The remaining videos remain
-watchable while their notes/questions are prepared. Captured transcripts do not
-mean the full curriculum has already been authored.
+Udemy sections 1–4 now have authored notes for all 60 videos, with 284 knowledge
+checks. Readings and Udemy quizzes continue to open on Udemy. Later sections
+remain watchable while their portal notes/questions are prepared. See the
+[curriculum verification report](docs/UDEMY_SECTIONS_1_4_VERIFICATION.md).
 
 Private transcripts and lesson JSON stay in Git-ignored `data/`. Imports publish
 directly; keep existing question IDs when correcting content to preserve rewards.
@@ -51,7 +267,7 @@ Only port 3000 is published, bound to `127.0.0.1`. SQLite lives in the host
 by Git and is outside both Docker build contexts.
 Course files are mounted read-only at `/courses`, outside container images.
 
-## Requirements and installation (Windows PowerShell)
+## Development checkout setup (Sam's computer)
 
 Install and start Docker Desktop with Linux containers and Docker Compose.
 No host Node.js or Python installation is required. Initial builds require

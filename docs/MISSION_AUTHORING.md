@@ -58,8 +58,16 @@ transferred privately, as Sam chose.
 
 ## Current coverage
 
-The existing Udemy lessons are 3 (three checks), 5 (six checks) and 6 (six checks).
-Their private files are `lesson3-notes.json`, `lesson5-notes.json` and
-`lesson6-notes.json`. The remaining video lessons are not yet authored; they show
-a clear pending-notes message while remaining watchable. Work with Sam on the
-rest of the curriculum after this format update.
+Udemy sections 1–4 have published notes for all 60 videos, with 284 questions.
+Section totals are 15/68, 8/35, 15/69 and 22/112 (videos/questions).
+The two readings and four Udemy quizzes remain external links. Sections 5 onward
+are not yet authored and retain the pending-notes message.
+
+The private batch is in `data/udemy/sections1-4/output/lesson-NN.json`.
+`sources.json` records the reviewed transcript hashes; `author.py` contains the
+manual authoring source, and `publish.py` validates/tests/imports the batch.
+`test-report.json` and `publication-report.json` record the executed checks and
+pre-publication backup. These files, like the captured transcripts, stay out of Git.
+Lessons 3, 5 and 6 retain their previous guide/question IDs and content. Their
+earlier private `lesson3-notes.json`, `lesson5-notes.json` and `lesson6-notes.json`
+files remain available. See `UDEMY_SECTIONS_1_4_VERIFICATION.md` for this batch.

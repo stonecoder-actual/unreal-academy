@@ -36,7 +36,7 @@ clone or copy the source repository into the Courses directory. Copying a whole
 course is a file operation, not a Git operation. Video files are not bundled in
 the application and local video courses must exist on the laptop.
 
-To bring over the current missions/catalogue and Jaxon's progress, make a
+To bring over the current lesson notes/catalogue and Jaxon's progress, make a
 consistent database snapshot on Sam's computer after deploying the current code:
 
 ```powershell
@@ -47,13 +47,15 @@ This prints a backup path such as `/data/backups/deployments/<id>.sqlite3`.
 Copy that **snapshot file** privately to the laptop, for example
 `C:\UnrealAcademy\Transfer\academy-initial.sqlite3`. Do not copy a live SQLite
 file while the app is writing; a raw copy can omit WAL data. The snapshot includes
-captured transcripts, authored missions, catalogue IDs, progress and XP. It does
+captured transcripts, authored takeaways/checks, catalogue IDs, progress and XP. It does
 not contain MP4 videos or external Udemy authentication. Keep it out of Git.
 
 Use the snapshot only on the first install. If you omit it, you get an empty
 academy; import courses through Parent setup, and separately author/import its
-missions. A fresh course import creates different IDs, so the initial snapshot
-is the easiest way to retain the current guided curriculum and saved state.
+lesson notes. A fresh course import creates different IDs, so the initial snapshot
+is the easiest way to retain the current curriculum and saved state. Make a fresh
+snapshot for this transfer: sections 1–4 now contain 60 video lessons and 284
+checks, so a snapshot made before that publication will not contain the batch.
 
 ## 3. Install (one command after cloning)
 
@@ -176,8 +178,8 @@ while logged out. Sleeping/battery-only use can delay automatic updates.
 ## 6. What Git updates do not transfer
 
 Git delivers application code, schema migrations, deployment scripts and docs.
-Purchased transcripts and authored mission JSON/database rows are intentionally
-excluded. **New missions authored on Sam's computer will not appear automatically
+Purchased transcripts and authored lesson JSON/database rows are intentionally
+excluded. **New lesson notes authored on Sam's computer will not appear automatically
 on the laptop through this updater.** They need a separate private transfer and
 guide reimport against retained IDs; a safe content-only sync is a later milestone.
 Do not solve this by uploading purchased curriculum or overwriting the laptop DB.
@@ -186,7 +188,7 @@ Initial transfer: use the snapshot once. Later corrections: privately copy the
 guide JSON onto the laptop, preserving lesson/question IDs, then use:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action ImportGuide -GuideFile C:\UnrealAcademy\Transfer\new-mission.json
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action ImportGuide -GuideFile C:\UnrealAcademy\Transfer\new-lesson.json
 ```
 
 It privately copies the JSON into Data/imports and calls the guide CLI for the
@@ -200,7 +202,8 @@ Udemy content automatically. Manage those through their normal vendor installers
 ## 7. Laptop acceptance and recovery checklist
 
 - [ ] Run Check and Install; localhost UI and `/api/health` work.
-- [ ] Course names, four initial missions and expected XP match the seed snapshot.
+- [ ] Course names, 60 Udemy video lessons in sections 1–4 and expected XP match
+      the fresh seed snapshot. Later sections still have pending notes.
 - [ ] Local playback/captions/resources work; Udemy opens in its signed-in browser.
 - [ ] Complete a real next check, restart Docker/laptop, and confirm saved XP/playback.
 - [ ] Task Scheduler shows the correct Windows user, logon/hourly triggers and success.
@@ -220,3 +223,11 @@ The deployment workflow has an isolated integration check in
 `tests/verify-laptop-update.ps1`. It creates its own local Git origin, loopback
 port, Docker project and synthetic data; it never pushes to GitHub or uses Jaxon's
 database. Actual laptop setup remains a separate acceptance step.
+
+Rechecked for the laptop README update on 16 October 2026: the full isolated
+Git/Docker integration passed fresh installation, private lesson import, saved
+XP/playback across an update, recent-activity deferral, no-op updates,
+dirty/offline refusal, interrupted-update recovery, preservation of newer writes
+after frontend exposure, and recovery from an unhealthy release. The disposable
+test services were stopped afterward. This verifies the update mechanism;
+complete the checklist above on the actual laptop after installing there.

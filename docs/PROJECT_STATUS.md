@@ -9,11 +9,10 @@ instructor supplies the practical activities; Jaxon follows along in UE5.
 Put the purchased Blueprints Udemy course first on the homepage and feature it
 as his starting course. Keep saved answers, progress and once-only XP.
 
-This replaces earlier mission/optional-activity plans. The three already-authored
-Udemy lessons are being converted now; authoring the remaining video curriculum
-is the next step with Sam. Captured transcripts are source material, not finished
-lessons. Continue publishing lesson notes directly, with private manual content
-transfer and automatic Git application updates as already agreed.
+This replaces earlier mission/optional-activity plans. Sections 1–4 are now
+authored and published for all 60 videos, with 284 checks. Sections 5 onward
+still need authoring. Continue publishing lesson notes directly, with private
+manual content transfer and automatic Git application updates as already agreed.
 
 # Unreal Academy inventory — 16 October 2026
 
@@ -26,17 +25,16 @@ parent approval requirements. Sam is satisfied with the lesson design/layout.
 | --- | --- | --- |
 | Phase 1: foundation | Complete | React/TypeScript, FastAPI, persistent SQLite, Compose, loopback-only port 3000, same-origin API, health checks, builds and automated tests. |
 | Phase 2: local learning | Complete | Three local courses, natural lesson ordering, MP4 playback/ranges, SRT captions, resources, saved playback/watched state, imports/rescans that retain identities. |
-| Phase 3: guided learning pilot | Working pilot complete; curriculum expansion ongoing | Four authored missions: local lesson 4 and Udemy lessons 3, 5 and 6. Direct publishing/corrections, automatic checks, hints, feedback, once-only XP, levels and optional practical activities. Full-course guided content has not been authored. |
+| Phase 3: learning checks | Framework and Udemy sections 1–4 complete; later sections pending | All 60 videos in sections 1–4 have takeaways and 284 automatic checks. Direct publishing/corrections, hints, feedback, once-only XP and levels. Udemy supplies practical work; no portal activities or parent grading. Historical local lesson 4 is retained. |
 | Udemy integration | Catalogue/transcript milestone complete | 221 curriculum items; 207 video transcripts captured. Exact Udemy links open separately. Udemy playback/completion does not sync; purchased media stay on Udemy. |
 | Learner interface | Accepted | Consistent course cards/difficulty labels, dashboard, student workspace and real progress; parent area handles administration. No redesign needed before deployment. |
-| Phase 4: laptop deployment | Implemented and locally tested; actual laptop rollout pending | Windows setup, requirement checks/download links, Git-based release updates, local data backups, persistence checks and recovery. Publish the final changes, then verify installation/credentials/scheduled execution on Jaxon's laptop. |
+| Phase 4: laptop deployment | Source published and locally tested; actual laptop rollout pending | Windows setup, requirement checks/download links, Git-based release updates, local data backups, persistence checks and recovery. App source through e1bdea3 is on main. Verify installation/credentials/scheduled execution on Jaxon's laptop; private curriculum transfers separately. |
 
 ## Immediate remaining work
 
-1. Commit and publish the final reviewed source changes to the existing
-   repository when Sam authorizes it. Deployment/update tools have passed local
-   backend, Windows and isolated Git/Docker integration checks.
-   Merely editing this computer does not distribute an update.
+1. Application/deployment source through e1bdea3 has been pushed to the existing
+   repository. This curriculum publication is local/private and is not delivered
+   by Git. Transfer its lesson JSON with ImportGuide when setting up the laptop.
 2. Prepare Jaxon's Windows account with Git, Docker Desktop/Linux containers,
    repository read access and course files. Install under `C:\UnrealAcademy`.
 3. If retaining today's learning state, transfer a consistent SQLite backup
@@ -44,9 +42,9 @@ parent approval requirements. Sam is satisfied with the lesson design/layout.
    settings and progress. Never replace the laptop database during later updates.
 4. Run the laptop acceptance checklist, including an actual Git update,
    scheduled task run, offline use and a restart with progress retained.
-5. Continue transcript-based missions using the accepted lesson format. Expand
-   in small batches rather than claiming the captured transcripts are finished
-   learning activities. Keep existing question IDs when correcting questions.
+5. Continue with Udemy section 5 onward using the accepted takeaways/checks
+   format. Sections 1–4 are complete. Keep existing question IDs when correcting
+   questions and never add portal practical activities.
 
 ## Future scope, deliberately not part of this deployment milestone
 
@@ -74,7 +72,8 @@ laptop these become `C:\UnrealAcademy\Data` and the configured course directory,
 outside the Git checkout and release images. The student remains one local Jaxon
 profile; Parent setup is navigation, not an authenticated boundary.
 
-Last pre-deployment live check: **15 XP**, lesson 3's three checks solved, four
-published missions, three local courses plus the external Udemy course. No real
-learner answers should be submitted for deployment testing. See
-`LAPTOP_DEPLOYMENT.md` and the deployment verification report for executed results.
+After publishing sections 1–4: **15 XP**, lesson 3's three checks still solved,
+60 published Udemy lesson quizzes plus the retained local pilot, three local
+courses and the external Udemy course. All learner-table fingerprints match the
+pre-publication snapshot. No synthetic answers were submitted to the live app.
+See `UDEMY_SECTIONS_1_4_VERIFICATION.md` and `LAPTOP_DEPLOYMENT.md`.
