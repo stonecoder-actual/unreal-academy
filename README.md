@@ -4,6 +4,13 @@ Phase 3 adds guided missions, automatic knowledge checks, optional practical
 activities, persistent XP and levels to the local course player. Parent setup
 handles video libraries, course imports, transcripts and local settings.
 
+For the phased inventory, read [current project status](docs/PROJECT_STATUS.md).
+To install on Jaxon's laptop and enable automatic Git updates, use the
+[Windows deployment guide](docs/LAPTOP_DEPLOYMENT.md) and `scripts/Academy.ps1`.
+That managed installation keeps data outside Git and verifies progress before
+opening an updated release. The direct Compose commands below remain the
+development workflow; use the managed script for the laptop installation.
+
 ## Guided missions
 
 Authored missions publish straight to Jaxon's portal. There is no approval queue.

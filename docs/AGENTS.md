@@ -17,7 +17,8 @@ Read docs/PROJECT_SPEC.md before implementing features.
 - Do not publish or distribute purchased curriculum.
 
 ## Current milestone
-Phase 3: Directly published guided missions, independent knowledge checks, optional practice and XP.
+Phase 4: Windows laptop deployment and controlled Git updates preserving progress.
+The Phase 3 guided-mission pilot is accepted; full curriculum authoring remains ongoing.
 
 ## Required stack
 - React and TypeScript
@@ -45,3 +46,6 @@ Phase 3: Directly published guided missions, independent knowledge checks, optio
 - Watching and quiz understanding are separate; do not imply optional practice has been assessed.
 - Purchased transcripts and derived course-specific curriculum stay in Git-ignored local data.
 - Authentication and live AI integration remain future work.
+- Deployment-managed laptop data stays outside Git/release checkouts. Use scripts/Academy.ps1 and its stored absolute mounts.
+- Build updates before downtime; preserve old images, back up SQLite, and verify existing learner records before opening the frontend.
+- Git distributes application code only. Private course transcripts and authored missions require separate local transfer; never overwrite a laptop database to distribute content.

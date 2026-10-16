@@ -53,8 +53,8 @@ try {
     $lessonId = (Invoke-RestMethod "$origin/api/courses/$script:CourseId").lessons[0].id
     $guide = @{lesson_id=$lessonId;title='Synthetic mission';overview='Deployment fixture only.';prerequisites=@();objectives=@('Test persistence');corrections=@();references=@();practice=$null;sections=@(@{id='test';title='Test';start=$null;end=$null;objective='Test';notes=@();pause_prompt='Think'});questions=@(@{id='check';section='test';prompt='Which synthetic answer is correct?';options=@('Correct','Incorrect');correct=0;explanation='Synthetic explanation';hint='Synthetic hint';xp=5})}
     $guide | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $install 'Data\fixture-guide.json') -Encoding UTF8
-    $guideId = (& docker exec "$project-backend-1" python -m app.guided /data/fixture-guide.json).Trim()
-    Assert ($LASTEXITCODE -eq 0) 'Synthetic guide import failed'
+    Native $powershell @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $repo 'scripts\Academy.ps1'),'-Action','ImportGuide','-Root',$install,'-GuideFile',(Join-Path $install 'Data\fixture-guide.json'))
+    $guideId = (Invoke-RestMethod "$origin/api/guided-lessons")[0].id
     Invoke-RestMethod "$origin/api/guides/$guideId/questions/check/answer" -Method Post -ContentType application/json -Body '{"answer":"Correct"}' | Out-Null
     Invoke-RestMethod "$origin/api/lessons/$lessonId/progress" -Method Put -ContentType application/json -Body '{"position":18,"watched":true}' | Out-Null
     Invoke-RestMethod "$origin/api/settings" -Method Put -ContentType application/json -Body '{"welcome_message":"Deployment test sentinel"}' | Out-Null

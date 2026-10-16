@@ -1,13 +1,14 @@
 #requires -Version 5.1
 [CmdletBinding()]
 param(
-    [ValidateSet('Install','Update','Check','Status','EnableUpdates','DisableUpdates')]
+    [ValidateSet('Install','Update','Check','Status','Backup','ImportGuide','EnableUpdates','DisableUpdates')]
     [string]$Action = 'Install',
     [string]$Root = 'C:\UnrealAcademy',
     [string]$Repository = 'https://github.com/stonecoder-actual/unreal-academy.git',
     [string]$Branch = 'main',
     [string]$CoursesDirectory,
     [string]$SeedDatabase,
+    [string]$GuideFile,
     [ValidateRange(1024,65535)][int]$Port = 3000,
     [ValidateRange(10,300)][int]$WaitSeconds = 120,
     [ValidatePattern('^[a-z][a-z0-9-]*$')][string]$Project = 'unreal-academy',
@@ -264,6 +265,10 @@ if ($LibraryOnly) { return }
 $script:LogFile = $null
 $script:InstallRoot = [IO.Path]::GetFullPath($Root)
 if ($script:InstallRoot -match '["\r\n$#]') { throw 'Installation path contains unsupported dotenv characters.' }
+if ($script:InstallRoot.TrimEnd('\') -eq [IO.Path]::GetPathRoot($script:InstallRoot).TrimEnd('\') -or
+    (Test-Path -LiteralPath (Join-Path $script:InstallRoot '.git'))) {
+    throw 'Choose a dedicated installation root outside any repository, not a drive root.'
+}
 $script:ConfigPath = Join-Path $script:InstallRoot 'install.json'
 $script:StatePath = Join-Path $script:InstallRoot 'current.json'
 $script:PendingPath = Join-Path $script:InstallRoot 'pending.json'
@@ -275,6 +280,12 @@ try {
     if ($Action -notin @('EnableUpdates','DisableUpdates')) { Test-Requirements }
     if ($Action -eq 'Check') { return }
     if ($Action -eq 'Install') {
+        if ($Repository -match '^https?://') {
+            $repoUri = [uri]$Repository
+            if ($repoUri.Scheme -ne 'https' -or $repoUri.UserInfo -or $repoUri.Query -or $repoUri.Fragment) {
+                throw 'Use a plain HTTPS repository URL without embedded credentials, queries or fragments.'
+            }
+        }
         if (Test-Path -LiteralPath $script:StatePath) { throw 'Already installed. Use -Action Update.' }
         if ((Invoke-Tool $script:Docker @('ps','-aq','--filter',"label=com.docker.compose.project=$Project")).Trim()) {
             throw 'This Docker project name is already in use. Do not install over another running academy.'
@@ -308,6 +319,20 @@ try {
         $config = Read-Json $script:ConfigPath
         switch ($Action) {
             'Update' { Deploy-Version $config }
+            'Backup' {
+                $state = Read-Json $script:StatePath
+                Invoke-Compose $config $state.Release $state.Override @('exec','-T','backend','python','-m','app.maintenance','backup') | Write-Host
+            }
+            'ImportGuide' {
+                if (-not $GuideFile -or [IO.Path]::GetExtension($GuideFile) -ne '.json') { throw 'Supply -GuideFile pointing to a private authored guide JSON.' }
+                $state = Read-Json $script:StatePath
+                $imports = Join-Path $config.Data 'imports'
+                New-Item -ItemType Directory -Force $imports | Out-Null
+                $name = [guid]::NewGuid().ToString('N') + '.json'
+                Copy-Item -LiteralPath $GuideFile -Destination (Join-Path $imports $name)
+                Invoke-Compose $config $state.Release $state.Override @('exec','-T','backend','python','-m','app.guided',"/data/imports/$name") | Write-Host
+                Write-Log 'Guide imported and published directly. Existing identities and earned XP retained. Refresh the portal.'
+            }
             'EnableUpdates' { Register-Updates }
             'DisableUpdates' { Disable-ScheduledTask -TaskName "$($config.Project)-updates" | Out-Null; Write-Log 'Automatic updates disabled; installed portal and progress retained.' }
             'Status' {

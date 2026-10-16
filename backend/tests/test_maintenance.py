@@ -1,4 +1,3 @@
-import json
 import sqlite3
 
 import pytest
@@ -28,7 +27,11 @@ def test_deployment_snapshot_and_roundtrip_restore_retains_failed_data(tmp_path)
         db.execute('UPDATE lesson_progress SET position=0')
     with pytest.raises(RuntimeError, match='lesson_progress'):
         verify(path, manifest)
+    journal = path.with_name(path.name + '-journal')
+    journal.write_bytes(b'Synthetic retained journal')
     recovery = restore(path, result['backup'])
+    assert not journal.exists()
+    assert (path.parent / recovery['retained_failed_data'] / journal.name).exists()
     assert verify(path, manifest)['verified']
     with sqlite3.connect(path) as db:
         assert db.execute('SELECT position FROM lesson_progress').fetchone()[0] == 42
@@ -73,6 +76,7 @@ def test_added_schema_columns_allowed_but_earned_xp_changes_rejected(tmp_path):
     manifest = str(saved['backup']).replace('.sqlite3', '.json')
     with sqlite3.connect(path) as db:
         db.execute('ALTER TABLE lesson_progress ADD COLUMN extra TEXT')
+        db.execute("INSERT INTO settings(key,value) VALUES('new_migration_default','default')")
     assert verify(path, manifest)['verified']
     with sqlite3.connect(path) as db:
         db.execute('UPDATE xp_transactions SET amount=999')

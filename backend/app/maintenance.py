@@ -7,14 +7,20 @@ import sqlite3
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
+from contextlib import closing, contextmanager
 
 # Only learner/identity records: guide publication can legitimately change at startup.
 TABLES = ('settings', 'courses', 'lessons', 'lesson_progress', 'quiz_attempts',
           'xp_transactions', 'practice_submissions')
 
 
+@contextmanager
 def open_readonly(path):
-    return sqlite3.connect(Path(path).resolve().as_uri() + '?mode=ro', uri=True)
+    db = sqlite3.connect(Path(path).resolve().as_uri() + '?mode=ro', uri=True)
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def fingerprint(db):
@@ -38,7 +44,7 @@ def backup(database):
     folder = database.parent / 'backups' / 'deployments'
     folder.mkdir(parents=True, exist_ok=True)
     target = folder / f'{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}-{uuid.uuid4().hex}.sqlite3'
-    with open_readonly(database) as source, sqlite3.connect(target) as dest:
+    with open_readonly(database) as source, closing(sqlite3.connect(target)) as dest:
         if source.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
             raise RuntimeError('Database integrity check failed; deployment stopped')
         source.backup(dest)
@@ -59,6 +65,12 @@ def verify(database, manifest):
             # Columns originated in a local snapshot, but still quote identifiers safely.
             names = ','.join('"' + c.replace('"', '""') + '"' for c in columns)
             rows = sorted((list(r) for r in db.execute(f'SELECT {names} FROM "{table}"')), key=lambda r: json.dumps(r))
+            if table == 'settings':
+                # Migrations may add defaults; existing settings must retain their values.
+                with open_readonly(saved['backup']) as previous:
+                    keys = {r[0] for r in previous.execute('SELECT key FROM settings')}
+                key_column = columns.index('key')
+                rows = [r for r in rows if r[key_column] in keys]
             raw = json.dumps(rows, ensure_ascii=False, separators=(',', ':')).encode()
             if len(rows) != expected['count'] or hashlib.sha256(raw).hexdigest() != expected['sha256']:
                 raise RuntimeError(f'Existing {table} records changed; keep frontend stopped and roll back')
@@ -90,11 +102,11 @@ def restore(database, snapshot):
             raise RuntimeError('Snapshot integrity check failed')
     retained = allowed / f'failed-{uuid.uuid4().hex}'
     retained.mkdir()
-    for suffix in ('', '-wal', '-shm'):
+    for suffix in ('', '-wal', '-shm', '-journal'):
         original = Path(str(database) + suffix)
         if original.exists():
             original.rename(retained / original.name)
-    with open_readonly(snapshot) as source, sqlite3.connect(database) as dest:
+    with open_readonly(snapshot) as source, closing(sqlite3.connect(database)) as dest:
         source.backup(dest)
     return {'restored': True, 'retained_failed_data': str(retained)}
 
