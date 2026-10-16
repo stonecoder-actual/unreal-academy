@@ -8,3 +8,9 @@ jobs:
       - run: docker compose config --quiet
       - run: docker compose --profile test run --build --rm backend-tests
       - run: docker compose build frontend
+  windows-deployment:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - shell: powershell
+        run: ./tests/verify-deployment.ps1

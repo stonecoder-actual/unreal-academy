@@ -75,10 +75,22 @@ try {
     [IO.File]::AppendAllText($sourceCompose,"`n# synthetic local edit`n")
     Update -ExpectFailure
     [IO.File]::WriteAllText($sourceCompose,$originalCompose)
+    $snapshot = Get-ChildItem (Join-Path $install 'Data\backups\deployments') -Filter '*.sqlite3' | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+    $pending = @{Commit=$current.Commit;Release=$current.Release;Override=$current.Override;Previous=$current;Snapshot=@{empty=$false;backup=('/data/backups/deployments/'+$snapshot.Name)};Exposed=$false}
+    Native docker @('stop',"$project-frontend-1","$project-backend-1")
+    $pending | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $install 'pending.json') -Encoding UTF8
     Native git @('-C',(Join-Path $install 'Source'),'remote','set-url','origin',(Join-Path $fixture 'Unavailable remote'))
     Update -ExpectFailure
+    Assert (-not (Test-Path (Join-Path $install 'pending.json'))) 'Interrupted update recovery did not finish before offline Git fetch'
     Native git @('-C',(Join-Path $install 'Source'),'remote','set-url','origin',$seed)
     Assert-Saved
+    # After frontend exposure, recovery must keep writes newer than the snapshot.
+    $pending.Exposed = $true
+    $pending | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $install 'pending.json') -Encoding UTF8
+    Invoke-RestMethod "$origin/api/settings" -Method Put -ContentType application/json -Body '{"welcome_message":"Writes after frontend exposure"}' | Out-Null
+    Update
+    Assert ((Invoke-RestMethod "$origin/api/settings").welcome_message -eq 'Writes after frontend exposure') 'Post-exposure recovery discarded newer writes'
+    Invoke-RestMethod "$origin/api/settings" -Method Put -ContentType application/json -Body '{"welcome_message":"Deployment test sentinel"}' | Out-Null
     # A valid Git release with a deliberately broken backend exercises real recovery.
     Add-Content -LiteralPath (Join-Path $seed 'backend\app\main.py') -Value "`nraise RuntimeError('Synthetic deployment failure')"
     Commit 'Deliberately failing synthetic release'
@@ -86,7 +98,7 @@ try {
     Assert-Saved
     Assert ((Get-Content (Join-Path $install 'current.json') -Raw | ConvertFrom-Json).Commit -eq $current.Commit) 'Failed release replaced known-good state'
     Assert (@(Get-ChildItem (Join-Path $install 'Data\backups\deployments') -Directory -Filter 'failed-*').Count -gt 0) 'Failed database was not preserved'
-    Write-Host "PASS: fresh install, recent-activity deferral, Git update, no-op, dirty/offline refusal, health-failure rollback and unchanged XP/playback. Fixtures: $fixture"
+    Write-Host "PASS: fresh install, recent-activity deferral, Git update, no-op, dirty/offline refusal, interrupted-update recovery, post-exposure writes, health-failure rollback and unchanged XP/playback. Fixtures: $fixture"
 } finally {
     # Stop only this unique disposable stack. Retain its database, releases and logs.
     $statePath = Join-Path $install 'current.json'

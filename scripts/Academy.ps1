@@ -137,7 +137,7 @@ function New-UpdateTaskDefinition($Config) {
     $logon.Delay = 'PT2M'
     $hourly = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Hours 1)
     $principal = New-ScheduledTaskPrincipal -UserId $account -LogonType Interactive -RunLevel Limited
-    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 45)
+    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 45)
     return (New-ScheduledTask -Action $action -Trigger @($logon,$hourly) -Principal $principal -Settings $settings -Description 'Check the configured Unreal Academy Git branch and deploy while learner records are idle.')
 }
 
@@ -148,7 +148,44 @@ function Register-Updates {
     Write-Log 'Automatic updates enabled for this Windows account: logon and hourly, while logged in and on AC power.'
 }
 
+function Archive-Pending {
+    if (Test-Path -LiteralPath $script:PendingPath) {
+        Move-Item -LiteralPath $script:PendingPath -Destination (Join-Path $script:InstallRoot ("Logs\transaction-{0}.json" -f [guid]::NewGuid().ToString('N')))
+    }
+}
+
+function Complete-Release($Commit,$Release,$Override) {
+    Save-Json $script:StatePath @{Commit=$Commit;Release=$Release;Override=$Override;UpdatedAt=(Get-Date).ToUniversalTime().ToString('o')}
+    New-Item -ItemType Directory -Force (Join-Path $script:InstallRoot 'Tools') | Out-Null
+    Copy-Item -LiteralPath (Join-Path $Release 'scripts\Academy.ps1') -Destination (Join-Path $script:InstallRoot 'Tools\Academy.ps1') -Force
+    Archive-Pending
+}
+
+function Recover-InterruptedDeployment($Config) {
+    if (-not (Test-Path -LiteralPath $script:PendingPath)) { return }
+    $pending = Read-Json $script:PendingPath
+    Write-Log 'Recovering an interrupted deployment from retained local images before contacting Git.'
+    if ($pending.Exposed) {
+        # Never overwrite potential new learner writes after the frontend was exposed.
+        Invoke-Compose $Config $pending.Release $pending.Override @('up','-d','--no-build','--wait','--wait-timeout',"$WaitSeconds") | Out-Null
+        $health = Invoke-RestMethod "http://127.0.0.1:$($Config.Port)/api/health" -TimeoutSec 15
+        if ($health.status -ne 'ok' -or $health.database -ne 'ok') { throw 'Interrupted release is still unhealthy; latest data retained.' }
+        Complete-Release $pending.Commit $pending.Release $pending.Override
+    } else {
+        Invoke-Compose $Config $pending.Release $pending.Override @('stop','frontend','backend') | Out-Null
+        if ($pending.Snapshot -and -not $pending.Snapshot.empty) {
+            Invoke-Maintenance $Config $pending.Release $pending.Override @('restore','--snapshot',$pending.Snapshot.backup) | Out-Null
+        }
+        if ($pending.Previous) {
+            Invoke-Compose $Config $pending.Previous.Release $pending.Previous.Override @('up','-d','--no-build','--wait','--wait-timeout',"$WaitSeconds") | Out-Null
+        }
+        Archive-Pending
+    }
+    Write-Log 'Interrupted deployment recovered without discarding learner writes.'
+}
+
 function Deploy-Version($Config, [switch]$FirstInstall) {
+    Recover-InterruptedDeployment $Config
     $source = Join-Path $script:InstallRoot 'Source'
     if ((Invoke-Tool $script:Git @('-C',$source,'status','--porcelain')).Trim()) { throw 'Source checkout has local changes. Preserve them and use a clean deployment checkout; no reset/stash was performed.' }
     Invoke-Tool $script:Git @('check-ref-format','--branch',$Config.Branch) | Out-Null
@@ -182,22 +219,26 @@ function Deploy-Version($Config, [switch]$FirstInstall) {
     $stopped = $false
     $exposed = $false
     try {
+        $pending = @{Commit=$commit;Release=$release;Override=$override;Previous=$old;Snapshot=$null;Exposed=$false}
+        Save-Json $script:PendingPath $pending
         Write-Log 'Switching versions: stopping services briefly and backing up learner records.'
         if ($old) { Invoke-Compose $Config $old.Release $old.Override @('stop','frontend','backend') | Out-Null }
         $stopped = $true
         $snapshot = Invoke-Maintenance $Config $release $override @('backup')
+        $pending.Snapshot = $snapshot
+        Save-Json $script:PendingPath $pending
         # Keep nginx stopped until the migrated database and old records are verified.
         Invoke-Compose $Config $release $override @('up','-d','--no-build','--wait','--wait-timeout',"$WaitSeconds",'backend') | Out-Null
         if (-not $snapshot.empty) {
             Invoke-Maintenance $Config $release $override @('verify','--snapshot',([IO.Path]::ChangeExtension($snapshot.backup,'.json'))) | Out-Null
         }
         $exposed = $true
+        $pending.Exposed = $true
+        Save-Json $script:PendingPath $pending
         Invoke-Compose $Config $release $override @('up','-d','--no-build','--wait','--wait-timeout',"$WaitSeconds",'frontend') | Out-Null
         $health = Invoke-RestMethod "http://127.0.0.1:$($Config.Port)/api/health" -TimeoutSec 15
         if ($health.status -ne 'ok' -or $health.database -ne 'ok') { throw 'Post-deployment health check failed.' }
-        Save-Json $script:StatePath @{Commit=$commit;Release=$release;Override=$override;UpdatedAt=(Get-Date).ToUniversalTime().ToString('o')}
-        New-Item -ItemType Directory -Force (Join-Path $script:InstallRoot 'Tools') | Out-Null
-        Copy-Item -LiteralPath (Join-Path $release 'scripts\Academy.ps1') -Destination (Join-Path $script:InstallRoot 'Tools\Academy.ps1') -Force
+        Complete-Release $commit $release $override
         Write-Log "Deployed $($commit.Substring(0,12)). Open http://localhost:$($Config.Port). Progress verified and retained."
     } catch {
         $failure = $_
@@ -213,6 +254,7 @@ function Deploy-Version($Config, [switch]$FirstInstall) {
                 Invoke-Compose $Config $old.Release $old.Override @('up','-d','--no-build','--wait','--wait-timeout',"$WaitSeconds") | Out-Null
                 Write-Log 'Previous version restored. Failed database retained beside the pre-update backup.'
             }
+            if (-not $exposed) { Archive-Pending }
         }
         throw $failure
     }
@@ -224,6 +266,7 @@ $script:InstallRoot = [IO.Path]::GetFullPath($Root)
 if ($script:InstallRoot -match '["\r\n$#]') { throw 'Installation path contains unsupported dotenv characters.' }
 $script:ConfigPath = Join-Path $script:InstallRoot 'install.json'
 $script:StatePath = Join-Path $script:InstallRoot 'current.json'
+$script:PendingPath = Join-Path $script:InstallRoot 'pending.json'
 $lock = $null
 try {
     New-Item -ItemType Directory -Force (Join-Path $script:InstallRoot 'Logs') | Out-Null
