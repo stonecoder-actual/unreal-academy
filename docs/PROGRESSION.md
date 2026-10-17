@@ -25,8 +25,11 @@ lifetime XP continues accumulating. The frontend handles the cap without a
 division by zero or a nonexistent Level 51 goal.
 
 The initial imported library contains 665 videos. The first authored Udemy batch
-averages about 47 XP per video, giving a roughly 31,000-XP projection for the
-library. Thresholds are the approved initial calibration; revisit deliberately
+averaged about 47 XP per video, giving the original roughly 31,000-XP projection.
+The completed 207-video Udemy course has 890 checks, about 4.3 checks per video
+at the usual 10-XP reward (some early checks award less). Other courses still need
+authoring, so this is not a final whole-library XP budget. The course offers 8,885
+possible XP. Thresholds remain the approved initial calibration; revisit deliberately
 after the remaining purchased courses and final checks are inventoried. Never
 silently change the curve based on newly published notes or revoke earned ranks.
 

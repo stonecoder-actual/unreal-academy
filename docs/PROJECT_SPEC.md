@@ -19,11 +19,11 @@ instructor supplies the practical activities; the learner follows along in UE5.
 Put the purchased Blueprints Udemy course first on the homepage and feature it
 as his starting course. Keep saved answers, progress and once-only XP.
 
-This replaces earlier mission/optional-activity plans. The three already-authored
-Udemy lessons are being converted now; authoring the remaining video curriculum
-is the next step with the project owner. Captured transcripts are source material, not finished
-lessons. Continue publishing lesson notes directly, with private manual content
-transfer and automatic Git application updates as already agreed.
+This replaces earlier mission/optional-activity plans. As of 17 October 2026,
+all 207 Udemy videos across sections 1–11 have published takeaways and 890
+automatic checks based on their captured transcripts. Preserve existing lesson,
+guide and question identities when correcting content. Continue publishing notes
+directly, with private manual content transfer and Git application updates.
 
 ## Current product policy — 16 October 2026
 

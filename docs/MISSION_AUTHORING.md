@@ -57,18 +57,20 @@ with permanent rank and emblem unlocks. No practical-work rewards are
 created by the current portal. Application updates use Git; lesson content is
 transferred privately, as the project owner chose.
 
-## Current coverage
+## Current coverage — 17 October 2026
 
-Udemy sections 1–4 have published notes for all 60 videos, with 284 questions.
-Section totals are 15/68, 8/35, 15/69 and 22/112 (videos/questions).
-The two readings and four Udemy quizzes remain external links. Sections 5 onward
-are not yet authored and retain the pending-notes message.
+All 207 Udemy video lessons across sections 1–11 have published takeaways and
+890 automatic questions. Sections 1–4 retain their 60 documents and 284 checks;
+sections 5–11 add 147 documents and 606 checks. All 14 non-video Udemy items
+remain external links. No portal practical activities or grading are added.
 
-The private batch is in `data/udemy/sections1-4/output/lesson-NN.json`.
-`sources.json` records the reviewed transcript hashes; `author.py` contains the
-manual authoring source, and `publish.py` validates/tests/imports the batch.
-`test-report.json` and `publication-report.json` record the executed checks and
-pre-publication backup. These files, like the captured transcripts, stay out of Git.
-Lessons 3, 5 and 6 retain their previous guide/question IDs and content. Their
-earlier private `lesson3-notes.json`, `lesson5-notes.json` and `lesson6-notes.json`
-files remain available. See `UDEMY_SECTIONS_1_4_VERIFICATION.md` for this batch.
+Private authoring sources, reviewed transcript hashes, importable documents and
+executed test/publication reports are under `data/udemy/sections1-4/` and
+`data/udemy/remaining/`. These directories remain excluded from Git.
+The full content-only transfer ZIP is
+`data/udemy/private-transfer-2026-10-17.zip`; its private README includes batch
+ImportGuide instructions for laptops retaining the original seeded catalogue IDs.
+It does not remap independently imported catalogues or replace learner databases.
+
+See `UDEMY_COMPLETE_CURRICULUM_VERIFICATION.md` for current coverage and tests;
+`UDEMY_SECTIONS_1_4_VERIFICATION.md` records the earlier batch historically.

@@ -20,7 +20,7 @@ Read docs/PROJECT_SPEC.md before implementing features.
 
 ## Current milestone
 Phase 4: Windows laptop deployment and controlled Git updates preserving progress.
-Current learning task: simplify Udemy to transcript-based key takeaways and 3–6 automatically checked questions per video; finish the remaining curriculum with the project owner next.
+Current learning task: simplify Udemy to transcript-based key takeaways and 3–6 automatically checked questions per video; all 207 Udemy videos are authored and published privately. Preserve this format and existing identities for corrections.
 
 ## Required stack
 - React and TypeScript

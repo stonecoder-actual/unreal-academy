@@ -196,14 +196,20 @@ active release. The guide publishes directly, archives the previous version and
 preserves earned XP. It cannot create missing course/transcript records or map
 unrelated fresh catalogue IDs; use the initial snapshot and retain identities.
 
+The complete private content-only package is
+`data/udemy/private-transfer-2026-10-17.zip` on the authoring computer. Transfer
+and extract it privately; follow its README to back up and import all 207 lesson
+JSON files. This requires the original seeded catalogue/transcript records.
+Do not import into an unrelated fresh catalogue or overwrite existing progress.
+
 The updater also does not update Docker Desktop, Git, Windows, Unreal Engine or
 Udemy content automatically. Manage those through their normal vendor installers.
 
 ## 7. Laptop acceptance and recovery checklist
 
 - [ ] Run Check and Install; localhost UI and `/api/health` work.
-- [ ] Course names, 60 Udemy video lessons in sections 1–4 and expected XP match
-      the fresh seed snapshot. Later sections still have pending notes.
+- [ ] Course names, all 207 Udemy video lessons across sections 1–11 and expected
+      XP match the fresh seed snapshot. The course has 890 automatic checks.
 - [ ] Local playback/captions/resources work; Udemy opens in its signed-in browser.
 - [ ] Complete a real next check, restart Docker/laptop, and confirm saved XP/playback.
 - [ ] Task Scheduler shows the correct Windows user, logon/hourly triggers and success.

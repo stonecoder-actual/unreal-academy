@@ -123,6 +123,11 @@ supplied lesson JSON privately, preserve lesson/question IDs, then import:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\UnrealAcademy\Tools\Academy.ps1 -Action ImportGuide -GuideFile C:\UnrealAcademy\Transfer\lesson.json
 ```
 
+All 207 Udemy videos now have takeaways and 890 checks. The complete private
+transfer package is `data/udemy/private-transfer-2026-10-17.zip` on the authoring
+computer. Its README covers batch import into an originally seeded laptop;
+Git updates alone do not deliver it.
+
 Import publishes directly and preserves earned XP; it does not replace the
 database. Udemy provides practical activities. Portal checks award XP once per
 correct question; watching and repeated successes award none.
