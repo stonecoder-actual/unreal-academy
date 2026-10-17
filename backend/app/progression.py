@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from .database import connect
+from .catalogue import udemy_only
 
 MAX_LEVEL = 50
 RANKS = [
@@ -47,16 +48,18 @@ def mastery(db, root=None):
     awards = {r[0] for r in db.execute("SELECT award_key FROM xp_transactions WHERE award_key LIKE 'question:%'")}
     courses = {}
     for row in db.execute('''SELECT p.lesson_id,p.course_id,c.title,l.available,l.content_hash,l.external_url,
-        g.id AS guide_id,g.document,g.status,g.video_hash,g.subtitle_hash,t.content_hash AS transcript_hash
+        c.source_type,g.id AS guide_id,g.document,g.status,g.video_hash,g.subtitle_hash,t.content_hash AS transcript_hash
         FROM mastery_plan p JOIN courses c ON c.id=p.course_id JOIN lessons l ON l.id=p.lesson_id
         LEFT JOIN guided_lessons g ON g.lesson_id=l.id
         LEFT JOIN lesson_transcripts t ON t.lesson_id=l.id'''):
-        course = courses.setdefault(row['course_id'], dict(course_id=row['course_id'], title=row['title'],
+        course = courses.setdefault(row['course_id'], dict(course_id=row['course_id'], title=row['title'],source_type=row['source_type'],
             videos=0, authored_videos=0, planned_checks=0, solved_checks=0))
         course['videos'] += 1
         current = (row['available'] and row['status'] == 'published' and row['video_hash'] == row['content_hash']
-                   and (not row['external_url'] or row['subtitle_hash'] == row['transcript_hash']))
-        if current and not row['external_url'] and root is not None:
+                   and (not row['external_url'] or row['subtitle_hash'] == row['transcript_hash'] or
+                        db.execute('SELECT 1 FROM bundled_lesson_sources WHERE lesson_id=? AND content_hash=?',
+                                   (row['lesson_id'], row['subtitle_hash'])).fetchone()))
+        if current and root is not None:
             # Reuse the local file/subtitle guard; changing files without a rescan
             # must not allow a stale guide to qualify for final mastery.
             from .guided import source
@@ -96,6 +99,10 @@ def mastery(db, root=None):
 def progression(db, root=None):
     summary = xp_summary(db)
     track = mastery(db, root)
+    # Visibility must not shrink the saved mastery plan or revoke earned rewards.
+    if udemy_only():
+        track['paused_courses'] = sum(c['source_type'] != 'udemy' for c in track['courses'])
+        track['courses'] = [c for c in track['courses'] if c['source_type'] == 'udemy']
     for rank_id, _, level, _, _ in RANKS:
         if summary['level'] >= level and (rank_id != 'unreal-master' or track['eligible']):
             db.execute('INSERT OR IGNORE INTO progression_unlocks(rank_id) VALUES(?)', (rank_id,))

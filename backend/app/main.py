@@ -9,6 +9,7 @@ from .library import create_library_router
 from .guided import create_guided_router, publish_existing_guides
 from .external import create_external_router
 from .progression import create_progression_router
+from .bundled import sync_curriculum
 
 
 def create_app(database_path: Path | None = None, courses_root: Path | None = None):
@@ -17,6 +18,8 @@ def create_app(database_path: Path | None = None, courses_root: Path | None = No
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         initialize(path)
+        if os.getenv('ACADEMY_BUNDLED_CURRICULUM', '1') != '0':
+            sync_curriculum(path, courses_root or Path(os.getenv('COURSES_ROOT', '/courses')))
         publish_existing_guides(path)
         yield
 

@@ -2,6 +2,7 @@ import hashlib
 import json
 import os
 import uuid
+from contextlib import nullcontext
 from pathlib import Path
 from datetime import datetime, timezone
 from typing import Literal
@@ -12,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .database import connect, initialize
 from .library import safe_path
 from .progression import xp_summary, progression
+from .catalogue import udemy_only
 
 
 class Question(BaseModel):
@@ -62,6 +64,9 @@ class GuideDocument(BaseModel):
 def source(db, lesson_id, root):
     row = db.execute('SELECT l.*,c.folder FROM lessons l JOIN courses c ON c.id=l.course_id WHERE l.id=?', (lesson_id,)).fetchone()
     if row and row['available'] and row['external_url']:
+        bundled = db.execute('SELECT content_hash FROM bundled_lesson_sources WHERE lesson_id=?', (lesson_id,)).fetchone()
+        if bundled:
+            return row['content_hash'], bundled['content_hash'], row['duration']
         transcript = db.execute('SELECT content_hash FROM lesson_transcripts WHERE lesson_id=?', (lesson_id,)).fetchone()
         if not transcript:
             raise HTTPException(409, 'This guide needs a captured lesson transcript')
@@ -80,7 +85,7 @@ def source(db, lesson_id, root):
         raise HTTPException(409, 'Source files are missing or unreadable') from error
 
 
-def import_guide(database, root, document):
+def import_guide(database, root, document, *, _connection=None):
     parsed = GuideDocument.model_validate(document)
     section_ids = [s.id for s in parsed.sections]
     ids = [q.id for q in parsed.questions]
@@ -88,8 +93,9 @@ def import_guide(database, root, document):
         raise ValueError('Question and section IDs must be unique')
     if any(q.correct >= len(q.options) or q.section not in section_ids for q in parsed.questions):
         raise ValueError('Question answer or section is invalid')
-    with connect(database) as db:
-        db.execute('BEGIN IMMEDIATE')
+    with (nullcontext(_connection) if _connection is not None else connect(database)) as db:
+        if _connection is None:
+            db.execute('BEGIN IMMEDIATE')
         video_hash, subtitle_hash, duration = source(db, parsed.lesson_id, root)
         course = db.execute('SELECT c.source_type FROM courses c JOIN lessons l ON l.course_id=c.id WHERE l.id=?', (parsed.lesson_id,)).fetchone()
         if course['source_type'] == 'udemy':
@@ -172,7 +178,7 @@ def create_guided_router(database, root):
     @router.get('/guided-lessons')
     def list_guides():
         with connect(database) as db:
-            return [dict(r) for r in db.execute("SELECT g.id,g.lesson_id,g.status,l.course_id FROM guided_lessons g JOIN lessons l ON l.id=g.lesson_id WHERE g.status='published' ORDER BY l.course_id,l.relative_path")]
+            return [dict(r) for r in db.execute("SELECT g.id,g.lesson_id,g.status,l.course_id FROM guided_lessons g JOIN lessons l ON l.id=g.lesson_id JOIN courses c ON c.id=l.course_id WHERE g.status='published' AND (?=0 OR c.source_type='udemy') ORDER BY l.course_id,l.relative_path", (int(udemy_only()),))]
 
     @router.get('/lessons/{lesson_id}/guide')
     def student_guide(lesson_id: str):

@@ -1,3 +1,8 @@
+> Update — 17 October 2026: Git now ships the authored portal notes/checks and
+> Udemy lesson links. No private transfer is needed. Raw transcripts and learner
+> records stay local. Non-Udemy courses are hidden. See [bundled curriculum](BUNDLED_CURRICULUM.md).
+> Earlier publication/storage details below describe the historical private batch.
+
 ## Current product policy — 16 October 2026
 
 The project owner removed the parent lesson-approval workflow. New missions publish directly

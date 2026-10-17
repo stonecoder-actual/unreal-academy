@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import uuid
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
@@ -68,11 +69,12 @@ class ExternalCourse(BaseModel):
         return self
 
 
-def import_external(database, payload):
+def import_external(database, payload, *, _connection=None):
     parsed = ExternalCourse.model_validate(payload)
     key = 'udemy:' + parsed.slug
-    with connect(database) as db:
-        db.execute('BEGIN IMMEDIATE')
+    with (nullcontext(_connection) if _connection is not None else connect(database)) as db:
+        if _connection is None:
+            db.execute('BEGIN IMMEDIATE')
         row = db.execute('SELECT id FROM courses WHERE folder=?', (key,)).fetchone()
         course_id = row['id'] if row else str(uuid.uuid4())
         db.execute('''INSERT INTO courses(id,folder,title,source_type,source_url,difficulty) VALUES(?,?,?,'udemy',?,?)

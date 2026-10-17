@@ -8,7 +8,7 @@ Read docs/PROJECT_SPEC.md before implementing features.
 - Work on one implementation milestone at a time.
 - Do not implement unrelated future features.
 - Prefer small, maintainable changes.
-- Keep student data, course materials, and secrets out of Git.
+- Keep student data, raw purchased media/transcripts, and secrets out of Git.
 - Bind published application ports to 127.0.0.1.
 - Preserve SQLite data across container rebuilds.
 - Write automated tests for new backend behavior.
@@ -16,11 +16,11 @@ Read docs/PROJECT_SPEC.md before implementing features.
 - Do not claim success when tests have not run.
 - Do not use mock functionality as a substitute for required persistence.
 - Request approval before destructive operations.
-- Do not publish or distribute purchased curriculum.
+- Per the 17 October 2026 user instruction, ship authored portal takeaways/checks and Udemy lesson links through Git. Do not ship purchased videos, raw transcripts, credentials or learner data.
 
 ## Current milestone
 Phase 4: Windows laptop deployment and controlled Git updates preserving progress.
-Current learning task: simplify Udemy to transcript-based key takeaways and 3–6 automatically checked questions per video; all 207 Udemy videos are authored and published privately. Preserve this format and existing identities for corrections.
+Current learning task: simplify Udemy to transcript-based key takeaways and 3–6 automatically checked questions per video; all 207 Udemy videos are authored and shipped as bundled portal notes/checks in Git. Default to Udemy-only visibility, preserving hidden course history. Preserve this format and existing identities for corrections.
 
 ## Required stack
 - React and TypeScript
@@ -48,8 +48,8 @@ Current learning task: simplify Udemy to transcript-based key takeaways and 3–
 - Corrections preserve guide/question identities and earned XP; archive previous documents locally.
 - All correct knowledge checks complete the lesson quiz automatically; preserve existing question IDs and once-only rewards.
 - Watching and quiz understanding are separate; do not imply optional practice has been assessed.
-- Purchased transcripts and derived course-specific curriculum stay in Git-ignored local data.
+- Raw purchased transcripts stay in Git-ignored local data. Authored portal notes/checks live in backend/curriculum/udemy.json and sync idempotently on startup.
 - Authentication and live AI integration remain future work.
 - Deployment-managed laptop data stays outside Git/release checkouts. Use scripts/Academy.ps1 and its stored absolute mounts.
 - Build updates before downtime; preserve old images, back up SQLite, and verify existing learner records before opening the frontend.
-- Git distributes application code only. Private course transcripts and authored missions require separate local transfer; never overwrite a laptop database to distribute content.
+- Git distributes application code, Udemy links and authored portal curriculum. Fresh installs require no private transfer or seed. Merge by external identities and preserve guide/question IDs; never overwrite learner databases to distribute content.

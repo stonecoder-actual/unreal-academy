@@ -155,7 +155,7 @@ def test_v4_migration_preserves_records_and_snapshot(academy,tmp_path):
     saved=backup(old)
     initialize(old)
     assert verify(old,Path(saved['backup']).with_suffix('.json'))['verified']
-    with sqlite3.connect(old) as db: assert db.execute('PRAGMA user_version').fetchone()[0]==5
+    with sqlite3.connect(old) as db: assert db.execute('PRAGMA user_version').fetchone()[0]==6
     assert list((old.parent/'backups').glob('pre-v5-*.sqlite3'))
     # New cosmetic state is included in future deployment preservation checks.
     with TestClient(create_app(academy)) as client: client.get('/api/progression')

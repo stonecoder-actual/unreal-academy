@@ -13,6 +13,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from .database import connect
+from .catalogue import udemy_only
 
 RESOURCE_TYPES = {'.zip', '.7z', '.rar', '.pdf', '.txt', '.md', '.json', '.csv',
                   '.png', '.jpg', '.jpeg', '.webp', '.uproject', '.uasset', '.umap',
@@ -198,13 +199,13 @@ def create_library_router(database: Path, root: Path):
                 COALESCE(SUM(p.watched),0) AS watched_count,
                 SUM(CASE WHEN p.position > 0 OR p.watched=1 THEN 1 ELSE 0 END) AS started_count FROM courses c
                 LEFT JOIN lessons l ON l.course_id=c.id AND l.available=1
-                LEFT JOIN lesson_progress p ON p.lesson_id=l.id GROUP BY c.id ORDER BY CASE WHEN c.folder='udemy:ue5-ultimate-bp-course' THEN 0 WHEN c.source_type='udemy' THEN 1 ELSE 2 END,c.title''')]
+                LEFT JOIN lesson_progress p ON p.lesson_id=l.id WHERE (?=0 OR c.source_type='udemy') GROUP BY c.id ORDER BY CASE WHEN c.folder='udemy:ue5-ultimate-bp-course' THEN 0 WHEN c.source_type='udemy' THEN 1 ELSE 2 END,c.title''', (int(udemy_only()),))]
 
     @router.get('/courses/{course_id}')
     def course_detail(course_id: str):
         with connect(database) as db:
             course = db.execute('SELECT * FROM courses WHERE id=?', (course_id,)).fetchone()
-            if course is None:
+            if course is None or (udemy_only() and course['source_type'] != 'udemy'):
                 raise HTTPException(404, 'Course not found')
             lessons = [dict(row) for row in db.execute('''SELECT l.*, COALESCE(p.position,0) AS position,
                 COALESCE(p.watched,0) AS watched, p.updated_at FROM lessons l

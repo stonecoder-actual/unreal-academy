@@ -37,6 +37,12 @@ Question rewards remain once-only: normally 10 XP, with smaller introductory
 rewards. Wrong answers, watching and repeated correct submissions earn none.
 There are no XP losses, streak penalties or new portal practical assignments.
 
+Fresh Udemy-only installs plan 207 videos. Existing installations keep their
+broader saved mastery membership, with paused non-Udemy cards hidden. Neither
+hiding courses nor shipping notes changes the level curve or revokes rewards.
+The 8,885-XP Udemy course alone does not reach Level 50; later ranks anticipate
+additional courses. Do not silently shrink an existing plan during deployment.
+
 ## Permanent collection
 
 - A first qualifying XP award persists the rank in `progression_unlocks`.

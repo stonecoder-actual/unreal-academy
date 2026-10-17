@@ -290,7 +290,11 @@ try {
         if ((Invoke-Tool $script:Docker @('ps','-aq','--filter',"label=com.docker.compose.project=$Project")).Trim()) {
             throw 'This Docker project name is already in use. Do not install over another running academy.'
         }
-        if (-not $CoursesDirectory -or -not (Test-Path -LiteralPath $CoursesDirectory -PathType Container)) {
+        if (-not $CoursesDirectory) {
+            $CoursesDirectory = Join-Path $script:InstallRoot 'Courses'
+            New-Item -ItemType Directory -Force $CoursesDirectory | Out-Null
+        }
+        if (-not (Test-Path -LiteralPath $CoursesDirectory -PathType Container)) {
             throw 'Supply -CoursesDirectory pointing to the existing local Courses folder.'
         }
         $courses = (Resolve-Path -LiteralPath $CoursesDirectory).Path

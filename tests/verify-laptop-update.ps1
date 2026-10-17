@@ -51,7 +51,11 @@ try {
     Native git @('-C',$seed,'config','user.name','Deployment test')
     Native git @('-C',$seed,'config','user.email','deployment@example.invalid')
     Commit 'Synthetic deployment fixture'
-    Native $powershell @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $repo 'scripts\Academy.ps1'),'-Action','Install','-Root',$install,'-Repository',$seed,'-CoursesDirectory',$courses,'-Port',"$port",'-Project',$project,'-SkipAutoUpdates','-WaitSeconds','30')
+    Native $powershell @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $repo 'scripts\Academy.ps1'),'-Action','Install','-Root',$install,'-Repository',$seed,'-Port',"$port",'-Project',$project,'-SkipAutoUpdates','-WaitSeconds','30')
+    $shippedCourses = @(Invoke-RestMethod "$origin/api/courses")
+    Assert ($shippedCourses.Count -eq 1 -and $shippedCourses[0].lesson_count -eq 221) 'Fresh clone did not install the Udemy catalogue'
+    $shippedGuides = Invoke-RestMethod "$origin/api/guided-lessons"
+    Assert ($shippedGuides.Count -eq 207) 'Fresh clone did not install all lesson notes'
     $manifest = @{slug='deployment-test';title='Synthetic deployment course';url='https://www.udemy.com/course/deployment-test/';difficulty='Beginner';lessons=@(@{external_id='123';title='Synthetic lesson';kind='video';section='Test';url='https://www.udemy.com/course/deployment-test/learn/lecture/123';duration=120;transcript=@{cues=@('Synthetic test only.');captured_at='2026-10-16T00:00:00Z'}})}
     $script:CourseId = (Invoke-RestMethod "$origin/api/parent/external-courses/import" -Method Post -ContentType application/json -Body ($manifest|ConvertTo-Json -Depth 8)).course_id
     $lessonId = (Invoke-RestMethod "$origin/api/courses/$script:CourseId").lessons[0].id
@@ -60,7 +64,7 @@ try {
     $guide.questions += @(1,2 | ForEach-Object { @{id="check-$_";section='test';prompt='Which synthetic answer is correct?';options=@('Correct','Incorrect');correct=0;explanation='Synthetic explanation';hint='Synthetic hint';xp=5} })
     $guide | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $install 'Data\fixture-guide.json') -Encoding UTF8
     Native $powershell @('-NoProfile','-ExecutionPolicy','Bypass','-File',(Join-Path $repo 'scripts\Academy.ps1'),'-Action','ImportGuide','-Root',$install,'-GuideFile',(Join-Path $install 'Data\fixture-guide.json'))
-    $guideId = (Invoke-RestMethod "$origin/api/guided-lessons")[0].id
+    $guideId = ((Invoke-RestMethod "$origin/api/guided-lessons") | Where-Object { $_.lesson_id -eq $lessonId }).id
     Invoke-RestMethod "$origin/api/guides/$guideId/questions/check/answer" -Method Post -ContentType application/json -Body '{"answer":"Correct"}' | Out-Null
     Invoke-RestMethod "$origin/api/progression/equipment" -Method Put -ContentType application/json -Body '{"title_id":"newbie","icon_id":"newbie"}' | Out-Null
     Invoke-RestMethod "$origin/api/lessons/$lessonId/progress" -Method Put -ContentType application/json -Body '{"position":18,"watched":true}' | Out-Null

@@ -208,7 +208,7 @@ def test_mastery_cannot_finalize_when_local_caption_changes(guided):
 def test_migration_preserves_phase_two_and_level_boundary(guided):
     database, root, _, guide_id = guided
     with sqlite3.connect(database) as db:
-        assert db.execute('PRAGMA user_version').fetchone()[0] == 5
+        assert db.execute('PRAGMA user_version').fetchone()[0] == 6
         db.execute('INSERT INTO xp_transactions(award_key,guide_id,amount,reason) VALUES(?,?,?,?)', ('test-boundary',guide_id,100,'Test boundary'))
     with TestClient(create_app(database, root)) as client:
         summary = client.get('/api/xp').json()

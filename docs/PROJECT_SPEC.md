@@ -1,3 +1,13 @@
+## Current deployment policy — 17 October 2026
+
+The user requests Udemy-only course visibility and Git-distributed portal content.
+Ship the catalogue, authored takeaways and quizzes with the app. Keep Udemy videos,
+raw purchased transcripts, credentials and all learner data out of Git. No private
+transfer/seed is required on a new laptop. Local SQLite retains progress, XP and
+rewards across automatic app/content updates. Hide other courses without deleting
+their history or shrinking the existing mastery plan. This policy supersedes
+the historical private-curriculum-transfer requirements below.
+
 ## Approved progression — 16 October 2026
 
 Use the Developer Guild progression in `PROGRESSION.md`: 50 levels, ten permanent
@@ -23,7 +33,7 @@ This replaces earlier mission/optional-activity plans. As of 17 October 2026,
 all 207 Udemy videos across sections 1–11 have published takeaways and 890
 automatic checks based on their captured transcripts. Preserve existing lesson,
 guide and question identities when correcting content. Continue publishing notes
-directly, with private manual content transfer and Git application updates.
+directly. As of 17 October 2026, Git distributes authored portal notes/checks and Udemy links automatically; no private transfer is needed. Raw transcripts and learner data stay local.
 
 ## Current product policy — 16 October 2026
 

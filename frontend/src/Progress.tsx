@@ -7,7 +7,7 @@ type MasteryCourse = {course_id:string;title:string;videos:number;authored_video
 export type XP = {total_xp:number;level:number;level_xp:number;xp_per_level:number;xp_to_next_level:number;max_level:number;at_max_level:boolean;
   ranks:Rank[];highest_rank:Rank;equipped_title:Rank;equipped_icon:Rank;next_rank:Rank|null;
   equipment:{title_id:string|null;icon_id:string|null};
-  mastery:{finalized:boolean;ready_to_finalize:boolean;eligible:boolean;estimate:boolean;courses:MasteryCourse[];planned_checks:number;solved_checks:number;required_checks:number;overall_percent:number;videos:number;authored_videos:number}};
+  mastery:{finalized:boolean;ready_to_finalize:boolean;eligible:boolean;estimate:boolean;paused_courses?:number;courses:MasteryCourse[];planned_checks:number;solved_checks:number;required_checks:number;overall_percent:number;videos:number;authored_videos:number}};
 function useProgressionState() {
   const [xp,setXP]=useState<XP|null>(null);
   const [error,setError]=useState('');
@@ -121,6 +121,7 @@ function MasteryTrack(){const {xp}=useXP();if(!xp)return null;const track=xp.mas
     <div className="mastery-summary"><strong>{track.overall_percent}% solved overall</strong><span>{track.solved_checks} / {track.required_checks} checks toward the 85% goal{track.estimate?' · estimated':''}</span></div>
     <Meter value={track.solved_checks} max={Math.max(1,track.required_checks)} label="Overall mastery goal"/>
     {!track.finalized&&<p className="mastery-draft">Track in preparation · {track.authored_videos} of {track.videos} videos have authored checks. Unprepared videos stay in the goal with an estimate of five checks each. Unreal Master unlocks after the full track is authored and finalized.</p>}
+    {!!track.paused_courses&&<p className="muted">Other courses are paused. Their saved progress and place in the full mastery plan are retained.</p>}
     <div className="mastery-courses">{track.courses.map(course=><article key={course.course_id}><h3>{course.title}</h3><p>{course.percent}% solved · 75% needed{course.authored_videos<course.videos?' · estimate':''}</p><Meter value={course.solved_checks} max={Math.max(1,course.required_checks)} label={`Mastery goal for ${course.title}`}/></article>)}</div>
     <p className="muted">Your earned ranks stay unlocked. This title recognizes academy progress; keep developing practical skills through the instructor’s activities.</p>
   </section>;
