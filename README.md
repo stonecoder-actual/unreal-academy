@@ -1,10 +1,14 @@
 # Unreal Academy
 
 Local Udemy learning portal: 207 videos, key takeaways, 890 automatic knowledge
-checks and XP. Lesson links and portal curriculum are included in Git.
+checks and XP. Only Udemy is shown for now. All lesson links, takeaways and
+quizzes are included in GitHub; no transfer from another computer is needed.
 Videos and practical activities stay on Udemy; sign in there separately.
 
 ## Install on a Windows laptop
+
+First installation: install prerequisites, clone this repository and run the
+installer below. **Already installed? Skip installation and use Updates.**
 
 1. Install [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install),
    [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
@@ -25,11 +29,13 @@ with zero XP. Repository access may require Git sign-in. No host Python, Node.js
 or SQLite installation is needed. Install [Unreal Engine](https://www.unrealengine.com/download)
 separately for the instructor's activities.
 
-On later days, start Docker Desktop and open the same address.
+On later days, start Docker Desktop and open the same address. Choose the Udemy
+course, open a video there, then return here for takeaways and knowledge checks.
 
 ## Updates
 
-The installer checks Git at sign-in and hourly while signed in, on AC power,
+Changes must be committed and pushed to `main`. The installed Windows task
+checks Git at sign-in and hourly while signed in, on AC power,
 with Docker and internet available. Automatic updates wait until no learning
 activity has been saved for 30 minutes. Refresh the browser after an update.
 Both app changes and revised portal lessons now arrive through Git.
